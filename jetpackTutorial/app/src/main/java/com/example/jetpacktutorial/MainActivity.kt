@@ -13,6 +13,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -27,6 +30,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.layout.AlignmentLine
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -34,41 +41,21 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
 setContent {
-    val snackbarHostState = remember { SnackbarHostState() }
-    var textFieldState by remember { mutableStateOf("") }
-    val coroutineScope = rememberCoroutineScope()
-
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(horizontal = 30.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            TextField(
-                value = textFieldState,
-                onValueChange = { newValue -> textFieldState = newValue },
-                label = { Text(text = "Enter your name") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(WindowInsets.safeDrawing.asPaddingValues())
+    ) {
+        items(1500) { i ->
+            Text(
+                text = "Item $i",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp)
             )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Button(
-                onClick = {
-                    coroutineScope.launch {
-                        snackbarHostState.showSnackbar("Hello, $textFieldState!")
-                    }
-                }
-            ) {
-                Text(text = "Submit")
-            }
         }
     }
 }
