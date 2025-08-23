@@ -1,0 +1,18 @@
+package com.example.splitkeyboard.model
+
+import androidx.compose.ui.unit.dp
+// Defines the type of action a key performs
+enum class KeyType {
+    CHARACTER,
+    ACTION_SHIFT,
+    ACTION_BACKSPACE,
+    ACTION_SPACE,
+    ACTION_ENTER
+}
+// Represents a single key on the keyboard
+data class Key(
+    val text: String,
+    val shiftText: String? = null,
+    val weight: Float = 1f, // Relative width of the key
+    val type: KeyType = KeyType.CHARACTER
+)
