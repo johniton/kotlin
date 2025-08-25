@@ -1,3 +1,164 @@
+//package com.example.splitkeyboard.ui.keyboard
+//
+//import androidx.compose.foundation.clickable
+//import androidx.compose.foundation.interaction.MutableInteractionSource
+//import androidx.compose.foundation.layout.*
+//import androidx.compose.material3.*
+//import androidx.compose.runtime.Composable
+//import androidx.compose.runtime.remember
+//import androidx.compose.ui.Alignment
+//import androidx.compose.ui.Modifier
+//import androidx.compose.ui.unit.dp
+//import com.example.splitkeyboard.model.Key
+//import com.example.splitkeyboard.model.KeyType
+//import androidx.compose.animation.core.animateFloatAsState
+//import androidx.compose.foundation.background
+//import androidx.compose.foundation.interaction.collectIsPressedAsState
+//import androidx.compose.runtime.getValue
+//import androidx.compose.ui.graphics.Color
+//import androidx.compose.ui.graphics.RectangleShape
+//import androidx.compose.ui.graphics.Shape
+//import androidx.compose.ui.graphics.graphicsLayer
+//@Composable
+//fun RowScope.KeyboardKey(
+//    key: Key,
+//    isCapsLockOn: Boolean,
+//    onKeyPress: (String) -> Unit,
+//    modifier: Modifier
+//) {
+//    val interactionSource = remember { MutableInteractionSource() }
+//    val isPressed by interactionSource.collectIsPressedAsState()
+//// Animate scale based on the isPressed state
+//    val scale by animateFloatAsState(
+//        targetValue = if (isPressed) 0.9f else 1.0f,
+//        label = "keyScaleAnimation"
+//    )
+//    val textToShow = when {
+//        isCapsLockOn -> key.shiftText?: key.text.uppercase()
+//        else -> key.text
+//    }
+//        val keyColor = when (key.type) {
+////        KeyType.CHARACTER -> MaterialTheme.colorScheme.surfaceVariant
+//            KeyType.CHARACTER -> Color.DarkGray
+//
+////            else -> MaterialTheme.colorScheme.secondaryContainer
+//            else -> Color(0xFF050A30)
+//
+//        }
+////... (rest of the key logic)
+//    Surface(
+//        modifier = Modifier
+//            .background(color = Color.Black)
+//            .graphicsLayer(scaleX = scale, scaleY = scale) // Apply the animated scale
+//            .weight(key.weight)
+//            .padding(1.dp)
+//            .fillMaxHeight()
+//            .clickable(
+//                interactionSource = interactionSource,
+//                indication = null,
+//                onClick = { onKeyPress(textToShow) }
+//            ),
+////        shape = MaterialTheme.shapes.small,
+////        shape = Shape,
+//        color = keyColor,
+//        tonalElevation = 3.dp
+//    ) {
+//        Box(
+//           contentAlignment = Alignment.Center,
+//           modifier = Modifier
+//               .aspectRatio(1f)
+//               .fillMaxSize()
+//       ) {
+//         Text(
+//              text = textToShow,
+//              style = MaterialTheme.typography.bodySmall,
+//              color = Color.White,
+//          )
+//      }
+//    }
+//}
+
+
+
+//package com.example.splitkeyboard.ui.keyboard
+//
+//import androidx.compose.foundation.clickable
+//import androidx.compose.foundation.interaction.MutableInteractionSource
+//import androidx.compose.foundation.layout.*
+//import androidx.compose.material3.*
+//import androidx.compose.runtime.Composable
+//import androidx.compose.runtime.remember
+//import androidx.compose.ui.Alignment
+//import androidx.compose.ui.Modifier
+//import androidx.compose.ui.unit.dp
+//import com.example.splitkeyboard.model.Key
+//import com.example.splitkeyboard.model.KeyType
+//import androidx.compose.animation.core.animateFloatAsState
+//import androidx.compose.foundation.background
+//import androidx.compose.foundation.interaction.collectIsPressedAsState
+//import androidx.compose.runtime.getValue
+//import androidx.compose.ui.graphics.Color
+//import androidx.compose.ui.graphics.RectangleShape
+//import androidx.compose.ui.graphics.graphicsLayer
+//
+//@Composable
+//fun RowScope.KeyboardKey(
+//    key: Key,
+//    isCapsLockOn: Boolean,
+//    onKeyPress: (String) -> Unit,
+//    modifier: Modifier
+//) {
+//    val interactionSource = remember { MutableInteractionSource() }
+//    val isPressed by interactionSource.collectIsPressedAsState()
+//
+//    // Animate scale based on the isPressed state
+//    val scale by animateFloatAsState(
+//        targetValue = if (isPressed) 0.9f else 1.0f,
+//        label = "keyScaleAnimation"
+//    )
+//
+//    val textToShow = when {
+//        isCapsLockOn -> key.shiftText ?: key.text.uppercase()
+//        else -> key.text
+//    }
+//
+//    val keyColor = when (key.type) {
+//        KeyType.CHARACTER -> Color.DarkGray
+//        else -> Color(0xFF050A30)
+//    }
+//
+//    Surface(
+//        modifier = Modifier
+//            .background(color = Color.Black)
+//            .graphicsLayer(scaleX = scale, scaleY = scale) // Apply the animated scale
+//            .weight(key.weight)
+//            .padding(1.dp)
+//            .fillMaxHeight() // Fill the row height
+//            .aspectRatio(1f) // Make keys square
+//            .clickable(
+//                interactionSource = interactionSource,
+//                indication = null,
+//                onClick = { onKeyPress(textToShow) }
+//            ),
+//        color = keyColor,
+//        tonalElevation = 3.dp
+//    ) {
+//        Box(
+//            contentAlignment = Alignment.Center,
+//            modifier = Modifier.fillMaxSize()
+//        ) {
+//            Text(
+//                text = textToShow,
+//                style = MaterialTheme.typography.bodySmall,
+//                color = Color.White,
+//            )
+//        }
+//    }
+//}
+
+
+////////////// newest
+
 package com.example.splitkeyboard.ui.keyboard
 
 import androidx.compose.foundation.clickable
@@ -12,9 +173,13 @@ import androidx.compose.ui.unit.dp
 import com.example.splitkeyboard.model.Key
 import com.example.splitkeyboard.model.KeyType
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.graphicsLayer
+
 @Composable
 fun RowScope.KeyboardKey(
     key: Key,
@@ -24,40 +189,47 @@ fun RowScope.KeyboardKey(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
-// Animate scale based on the isPressed state
+
+    // Animate scale based on the isPressed state
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 0.9f else 1.0f,
         label = "keyScaleAnimation"
     )
+
     val textToShow = when {
-        isCapsLockOn -> key.shiftText?: key.text.uppercase()
+        isCapsLockOn -> key.shiftText ?: key.text.uppercase()
         else -> key.text
     }
-        val keyColor = when (key.type) {
-        KeyType.CHARACTER -> MaterialTheme.colorScheme.surfaceVariant
-        else -> MaterialTheme.colorScheme.secondaryContainer
+
+    val keyColor = when (key.type) {
+        KeyType.CHARACTER -> Color.DarkGray
+        else -> Color(0xFF050A30)
     }
-//... (rest of the key logic)
+
     Surface(
         modifier = Modifier
+            .background(color = Color.Black)
             .graphicsLayer(scaleX = scale, scaleY = scale) // Apply the animated scale
             .weight(key.weight)
-            .padding(2.dp)
-            .fillMaxHeight()
+            .padding(1.dp)
+            .fillMaxHeight() // Fill the row height
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
                 onClick = { onKeyPress(textToShow) }
             ),
-        shape = MaterialTheme.shapes.medium,
         color = keyColor,
         tonalElevation = 3.dp
     ) {
-       Box(contentAlignment = Alignment.Center) {
-         Text(
-              text = textToShow,
-              style = MaterialTheme.typography.bodyLarge
-          )
-      }
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier.fillMaxSize()
+        ) {
+            Text(
+                text = textToShow,
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.White,
+            )
+        }
     }
 }
