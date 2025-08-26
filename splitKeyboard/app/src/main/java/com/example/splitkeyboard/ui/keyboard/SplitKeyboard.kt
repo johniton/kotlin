@@ -23,7 +23,7 @@ import com.example.splitkeyboard.viewmodel.KeyboardViewModel
 fun SplitKeyboard(
     layout: List<List<Key>>,
     isCapsLockOn: Boolean,
-    onKeyPress: (String) -> Unit,
+//    onKeyPress: (String) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: KeyboardViewModel
 ) {
@@ -66,11 +66,19 @@ fun SplitKeyboard(
                             key,
                             isCapsLockOn,
                             onKeyPress = { text ->
+//                                when (key.type) {
+//                                    KeyType.ACTION_TOGGLE -> viewModel.onToggleKeyboard()
+//                                    KeyType.ACTION_BACKSPACE -> viewModel.onBackspace()
+//                                    KeyType.ACTION_ENTER -> viewModel.onKeyPress('\n')
+//                                    KeyType.ACTION_SPACE -> viewModel.onKeyPress(' ')
+//                                    else -> viewModel.onKeyPress(text.first())
+//                                }
                                 when (key.type) {
                                     KeyType.ACTION_TOGGLE -> viewModel.onToggleKeyboard()
                                     KeyType.ACTION_BACKSPACE -> viewModel.onBackspace()
                                     KeyType.ACTION_ENTER -> viewModel.onKeyPress('\n')
                                     KeyType.ACTION_SPACE -> viewModel.onKeyPress(' ')
+                                    KeyType.ACTION_SHIFT -> viewModel.onToggleCapsLock()
                                     else -> viewModel.onKeyPress(text.first())
                                 }
                             },
@@ -94,7 +102,16 @@ fun SplitKeyboard(
                         KeyboardKey(
                             key,
                             isCapsLockOn,
-                            onKeyPress,
+                            onKeyPress = { text ->
+                                when (key.type) {
+                                    KeyType.ACTION_TOGGLE -> viewModel.onToggleKeyboard()
+                                    KeyType.ACTION_BACKSPACE -> viewModel.onBackspace()
+                                    KeyType.ACTION_ENTER -> viewModel.onKeyPress('\n')
+                                    KeyType.ACTION_SPACE -> viewModel.onKeyPress(' ')
+                                    KeyType.ACTION_SHIFT -> viewModel.onToggleCapsLock()
+                                    else -> viewModel.onKeyPress(text.first())
+                                }
+                            },
                             modifier.background(
                                 shape = RoundedCornerShape(50.dp),
                                 color = Color.Black

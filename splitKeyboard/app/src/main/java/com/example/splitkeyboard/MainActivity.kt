@@ -29,6 +29,7 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.splitkeyboard.data.KeyboardLayout.developerLayout
 import com.example.splitkeyboard.data.KeyboardLayout.qwertyLayout
+import com.example.splitkeyboard.ui.keyboard.KeyboardScreen
 import com.example.splitkeyboard.ui.keyboard.SplitKeyboard
 import com.example.splitkeyboard.ui.theme.SplitKeyboardTheme
 import com.example.splitkeyboard.viewmodel.KeyboardViewModel
@@ -52,10 +53,12 @@ class MainActivity : ComponentActivity() {
             val insets = ViewCompat.getRootWindowInsets(view)
             val hasSoftNav =
                 (insets?.getInsets(WindowInsetsCompat.Type.navigationBars())?.bottom ?: 0) > 0
+
+            // Creating a view model in the highest parent so it can be passed down
             val keyboardViewModel: KeyboardViewModel = viewModel()
 
             SplitKeyboardTheme {
-                Column (
+                Column(
                     verticalArrangement = Arrangement.Bottom,
                     modifier = Modifier.fillMaxSize()
                         .background(color = Color.Black)
@@ -64,57 +67,10 @@ class MainActivity : ComponentActivity() {
                             if (hasSoftNav) Modifier else Modifier.windowInsetsPadding(WindowInsets.navigationBars)
                         ),  // To avoid nodge
 
-                    ){
-                    Keyboard(viewModel = keyboardViewModel)
+                ) {
+                    KeyboardScreen(viewModel = keyboardViewModel)
                 }
             }
         }
     }
-
-@Composable
-fun Keyboard(viewModel: KeyboardViewModel) {
-    Box() {
-        val configuration = LocalConfiguration.current
-        val screenHeightPx = configuration.screenHeightDp     // in dp
-        val screenHeightDp = screenHeightPx.dp
-        Box(
-            modifier = Modifier.fillMaxWidth()
-                .height(screenHeightDp/2f),
-//                .windowInsetsPadding(WindowInsets.displayCutout),
-            contentAlignment = Alignment.BottomCenter
-
-        ) {
-            val keyboardMode = viewModel.toggleKeyboard
-            if (keyboardMode) {
-                SplitKeyboard(
-                    viewModel = viewModel,
-                    layout = developerLayout,
-                    isCapsLockOn = false,
-                    onKeyPress = {},
-                    modifier = Modifier,
-                )
-            }
-            else{
-                SplitKeyboard(
-                    viewModel = viewModel,
-                    layout = qwertyLayout,
-                    isCapsLockOn = false,
-                    onKeyPress = {},
-                    modifier = Modifier,
-                )
-            }
-        }
-    }
-    }
-
-}
-
-@Composable
-fun hasSoftNavigationBar(): Boolean {
-    val view = LocalView.current
-    val insets = ViewCompat.getRootWindowInsets(view) ?: return false
-
-    // Check if there is a bottom navigation bar inset
-    val navBarHeight = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom
-    return navBarHeight > 0
 }
