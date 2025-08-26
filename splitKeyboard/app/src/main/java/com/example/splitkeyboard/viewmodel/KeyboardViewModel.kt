@@ -1,6 +1,9 @@
 
 package com.example.splitkeyboard.viewmodel
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import com.example.splitkeyboard.ui.keyboard.KeyboardUiState
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -10,6 +13,7 @@ import kotlinx.coroutines.flow.update
 
 class KeyboardViewModel : ViewModel() {
 
+    var toggleKeyboard by mutableStateOf(false)
     private val _uiState = MutableStateFlow(KeyboardUiState())
     val uiState: StateFlow<KeyboardUiState> = _uiState.asStateFlow()
 
@@ -32,5 +36,9 @@ class KeyboardViewModel : ViewModel() {
         _uiState.update { currentState ->
             currentState.copy(isCapsLockOn = !currentState.isCapsLockOn)
         }
+    }
+
+    fun onToggleKeyboard(){
+        toggleKeyboard=!toggleKeyboard
     }
 }
