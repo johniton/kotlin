@@ -61,7 +61,7 @@ class MainActivity : ComponentActivity() {
                 Column(
                     verticalArrangement = Arrangement.Bottom,
                     modifier = Modifier.fillMaxSize()
-                        .background(color = Color.Black)
+//                        .background(color = Color.Black)
                         .windowInsetsPadding(WindowInsets.displayCutout)
                         .then(
                             if (hasSoftNav) Modifier else Modifier.windowInsetsPadding(WindowInsets.navigationBars)

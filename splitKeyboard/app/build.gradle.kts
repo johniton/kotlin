@@ -51,6 +51,9 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.compose.testing)
     implementation(libs.androidx.foundation.layout)
+    implementation(libs.ui)
+    implementation(libs.androidx.foundation)
+    implementation(libs.androidx.benchmark.common)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -61,6 +64,9 @@ dependencies {
 
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.9.2")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.9.2")
+
+    implementation("androidx.constraintlayout:constraintlayout-compose:1.1.0")
+
 
 
 

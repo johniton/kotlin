@@ -5,7 +5,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
-import com.example.splitkeyboard.ui.keyboard.KeyboardUiState
+import com.example.splitkeyboard.viewmodel.KeyboardUiState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -13,7 +13,6 @@ import kotlinx.coroutines.flow.update
 
 class KeyboardViewModel : ViewModel() {
 
-    var toggleKeyboard by mutableStateOf(false)
     private val _uiState = MutableStateFlow(KeyboardUiState())
     val uiState: StateFlow<KeyboardUiState> = _uiState.asStateFlow()
 
@@ -27,7 +26,8 @@ class KeyboardViewModel : ViewModel() {
     fun onBackspace() {
         _uiState.update { currentState ->
             currentState.copy(
-                currentText = currentState.currentText.dropLast(1)
+                currentText = currentState.currentText.takeIf { it.isNotEmpty() }?.dropLast(1) ?: ""
+
             )
         }
     }
@@ -38,7 +38,9 @@ class KeyboardViewModel : ViewModel() {
         }
     }
 
-    fun onToggleKeyboard(){
-        toggleKeyboard=!toggleKeyboard
+    fun toggleKeyboardVisibility() {
+        _uiState.update { currentState ->
+            currentState.copy(toggleKeyboard = !currentState.toggleKeyboard)
+        }
     }
 }
