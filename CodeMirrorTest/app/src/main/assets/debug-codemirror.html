@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug CodeMirror</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background-color: #1e1e1e;
+            color: #ffffff;
+        }
+        .debug-box {
+            background: #2d2d2d;
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 10px 0;
+        }
+        .success { border-color: #4CAF50; background: #1b4332; }
+        .loading { border-color: #FFC107; background: #3d3a00; }
+    </style>
+</head>
+<body>
+<div class="debug-box success">
+    <h2>✅ HTML Structure Loaded</h2>
+    <p>Basic HTML is working in WebView</p>
+</div>
+
+<div class="debug-box loading" id="js-status">
+    <h3>🔄 Testing JavaScript...</h3>
+    <p id="js-result">Checking...</p>
+</div>
+
+<div class="debug-box" id="webview-info">
+    <h3>📱 WebView Information</h3>
+    <div id="webview-details">Loading...</div>
+</div>
+
+<div class="debug-box">
+    <h3>🧪 Android Interface Test</h3>
+    <button onclick="testAndroidInterface()" style="background: #007acc; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer;">
+        Test Android Functions
+    </button>
+    <div id="android-test-result"></div>
+</div>
+
+<script>
+    console.log("Starting JavaScript execution...");
+
+    try {
+        // Test 1: Basic JavaScript
+        document.getElementById('js-result').textContent = "✅ JavaScript is working!";
+        document.getElementById('js-status').className = 'debug-box success';
+
+        // Test 2: WebView info
+        const webviewDetails = document.getElementById('webview-details');
+        webviewDetails.innerHTML = `
+            <p><strong>User Agent:</strong> ${navigator.userAgent}</p>
+            <p><strong>Platform:</strong> ${navigator.platform}</p>
+            <p><strong>Online:</strong> ${navigator.onLine}</p>
+            <p><strong>Current URL:</strong> ${window.location.href}</p>
+            <p><strong>Screen Size:</strong> ${screen.width} x ${screen.height}</p>
+            <p><strong>Viewport Size:</strong> ${window.innerWidth} x ${window.innerHeight}</p>
+        `;
+
+        // Test 3: Android interface functions
+        window.getEditorContent = () => {
+            return "Debug content from WebView";
+        };
+
+        window.setEditorContent = (content) => {
+            console.log("setEditorContent called with:", content);
+            document.getElementById('android-test-result').innerHTML = `
+                <p style="color: #4CAF50; margin-top: 10px;">
+                    ✅ Android interface working! Received: "${content}"
+                </p>
+            `;
+        };
+
+        function testAndroidInterface() {
+            const testContent = window.getEditorContent();
+            console.log("getEditorContent returned:", testContent);
+
+            document.getElementById('android-test-result').innerHTML = `
+                <p style="color: #4CAF50; margin-top: 10px;">
+                    ✅ getEditorContent() returned: "${testContent}"
+                </p>
+                <p style="color: #61dafb;">
+                    Now try the "Set Code" button in your Android app to test setEditorContent()
+                </p>
+            `;
+        }
+
+        // Make testAndroidInterface global
+        window.testAndroidInterface = testAndroidInterface;
+
+        console.log("All tests completed successfully!");
+
+    } catch (error) {
+        console.error("JavaScript error:", error);
+        document.getElementById('js-result').textContent = "❌ JavaScript error: " + error.message;
+        document.getElementById('js-status').style.borderColor = '#f44336';
+        document.getElementById('js-status').style.background = '#4a1818';
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test</title>
+    <style>
+        body {
+            background-color: #1e1e1e;
+            color: #ffffff;
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            text-align: center;
+        }
+        .success {
+            background: #4CAF50;
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+<div class="success">
+    <h1>✅ HTML File Loading Successfully!</h1>
+    <p>Assets folder is working correctly.</p>
+    <p>Now you can replace this with your code editor.</p>
+</div>
+
+<script>
+    // Test functions for Android
+    window.getEditorContent = () => {
+        return "Test content from HTML";
+    };
+
+    window.setEditorContent = (content) => {
+        alert("Set content called with: " + content);
+    };
+
+    console.log("Test HTML loaded successfully!");
+</script>
+</body>
+</html>

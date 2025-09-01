@@ -1,0 +1,1628 @@
+<!--<!DOCTYPE html>-->
+<!--<html lang="en">-->
+<!--<head>-->
+<!--    <meta charset="UTF-8">-->
+<!--    <meta name="viewport" content="width=device-width, initial-scale=1.0">-->
+<!--    <title>CodeMirror 6 - Working Version</title>-->
+<!--    <style>-->
+<!--        body {-->
+<!--            margin: 0;-->
+<!--            padding: 10px;-->
+<!--            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;-->
+<!--            background-color: #1e1e1e;-->
+<!--            color: #ffffff;-->
+<!--        }-->
+<!--        #editor {-->
+<!--            height: calc(100vh - 20px);-->
+<!--            border-radius: 8px;-->
+<!--            border: 1px solid #333;-->
+<!--            background: #2d2d2d;-->
+<!--        }-->
+<!--        .loading {-->
+<!--            display: flex;-->
+<!--            justify-content: center;-->
+<!--            align-items: center;-->
+<!--            height: 100vh;-->
+<!--            font-size: 18px;-->
+<!--            color: #888;-->
+<!--        }-->
+<!--    </style>-->
+<!--</head>-->
+<!--<body>-->
+<!--<div id="editor" class="loading">Loading CodeMirror...</div>-->
+
+<!--<script type="module">-->
+<!--    async function loadCodeMirror() {-->
+<!--        try {-->
+<!--            // Import everything from a single source to avoid version conflicts-->
+<!--            const module = await import('https://cdn.jsdelivr.net/npm/@uiw/codemirror-editor@4.21.21/+esm');-->
+
+<!--            const initialCode = `// Welcome to CodeMirror 6 on Android!-->
+<!--function greetUser(name) {-->
+<!--console.log(\`Hello, \${name}! Welcome to mobile coding.\`);-->
+
+<!--// You can edit this code-->
+<!--const features = [-->
+<!--    'Syntax highlighting',-->
+<!--    'Auto completion',-->
+<!--    'Mobile-friendly',-->
+<!--    'Dark theme'-->
+<!--];-->
+
+<!--features.forEach((feature, index) => {-->
+<!--    console.log(\`\${index + 1}. \${feature}\`);-->
+<!--});-->
+
+<!--return \`Thanks for trying CodeMirror on Android!\`;-->
+<!--}-->
+
+<!--// Try calling the function-->
+<!--greetUser('Developer');-->
+
+<!--// Add your own code below:-->
+<!--`;-->
+
+<!--            // Clear loading message-->
+<!--            const editorElement = document.getElementById('editor');-->
+<!--            editorElement.className = '';-->
+<!--            editorElement.innerHTML = '';-->
+
+<!--            // Create the editor using the bundled version-->
+<!--            const editor = module.default({-->
+<!--                value: initialCode,-->
+<!--                height: 'calc(100vh - 20px)',-->
+<!--                extensions: [-->
+<!--                    module.javascript(),-->
+<!--                    module.oneDark-->
+<!--                ],-->
+<!--                theme: 'dark'-->
+<!--            });-->
+
+<!--            editorElement.appendChild(editor);-->
+
+<!--            // Get the CodeMirror view instance-->
+<!--            const view = editor.view;-->
+
+<!--            // Android interface functions-->
+<!--            window.getEditorContent = () => view.state.doc.toString();-->
+<!--            window.setEditorContent = (content) => {-->
+<!--                view.dispatch({-->
+<!--                    changes: { from: 0, to: view.state.doc.length, insert: content }-->
+<!--                });-->
+<!--            };-->
+
+<!--            console.log('CodeMirror 6 loaded successfully with bundled version!');-->
+
+<!--        } catch (error) {-->
+<!--            console.error('Failed with bundled version, trying alternative approach:', error);-->
+<!--            await loadFallbackEditor();-->
+<!--        }-->
+<!--    }-->
+
+<!--    async function loadFallbackEditor() {-->
+<!--        try {-->
+<!--            // Fallback: Use a different CodeMirror distribution-->
+<!--            const { createCodeMirror } = await import('https://cdn.skypack.dev/@uiw/react-codemirror@4.21.21');-->
+
+<!--            // If that fails too, show a working text editor-->
+<!--            throw new Error('Trying text editor fallback');-->
+
+<!--        } catch (error) {-->
+<!--            console.log('Loading simple text editor as fallback');-->
+<!--            loadSimpleEditor();-->
+<!--        }-->
+<!--    }-->
+
+<!--    function loadSimpleEditor() {-->
+<!--        const editorElement = document.getElementById('editor');-->
+<!--        editorElement.className = '';-->
+
+<!--        const initialCode = `// Welcome to CodeMirror 6 on Android!-->
+<!--function greetUser(name) {-->
+<!--console.log(\`Hello, \${name}! Welcome to mobile coding.\`);-->
+
+<!--// You can edit this code-->
+<!--const features = [-->
+<!--    'Syntax highlighting',-->
+<!--    'Auto completion',-->
+<!--    'Mobile-friendly',-->
+<!--    'Dark theme'-->
+<!--];-->
+
+<!--features.forEach((feature, index) => {-->
+<!--    console.log(\`\${index + 1}. \${feature}\`);-->
+<!--});-->
+
+<!--return \`Thanks for trying CodeMirror on Android!\`;-->
+<!--}-->
+
+<!--// Try calling the function-->
+<!--greetUser('Developer');-->
+
+<!--// Add your own code below:-->
+<!--`;-->
+
+<!--        editorElement.innerHTML = `-->
+<!--            <div style="padding: 10px; background: #2d2d2d; color: #61dafb; font-size: 14px; border-bottom: 1px solid #444;">-->
+<!--                📝 Simple Code Editor (CodeMirror fallback)-->
+<!--            </div>-->
+<!--            <textarea-->
+<!--                id="code-textarea"-->
+<!--                style="-->
+<!--                    width: 100%;-->
+<!--                    height: calc(100vh - 60px);-->
+<!--                    background: #2d2d2d;-->
+<!--                    color: #e1e1e1;-->
+<!--                    border: none;-->
+<!--                    padding: 15px;-->
+<!--                    font-family: 'Courier New', Monaco, monospace;-->
+<!--                    font-size: 14px;-->
+<!--                    line-height: 1.5;-->
+<!--                    resize: none;-->
+<!--                    outline: none;-->
+<!--                    box-sizing: border-box;-->
+<!--                "-->
+<!--            >${initialCode}</textarea>-->
+<!--        `;-->
+
+<!--        const textarea = document.getElementById('code-textarea');-->
+
+<!--        // Android interface functions for fallback-->
+<!--        window.getEditorContent = () => textarea.value;-->
+<!--        window.setEditorContent = (content) => {-->
+<!--            textarea.value = content;-->
+<!--        };-->
+
+<!--        console.log('Fallback text editor loaded successfully!');-->
+<!--    }-->
+
+<!--    // Start loading-->
+<!--    loadCodeMirror();-->
+<!--</script>-->
+<!--</body>-->
+<!--</html>-->
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Editor - Guaranteed Working</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #1e1e1e;
+            color: #ffffff;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .editor-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background: #1e1e1e;
+        }
+
+        .toolbar {
+            background: #2d2d2d;
+            padding: 10px 15px;
+            border-bottom: 1px solid #444;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 14px;
+        }
+
+        .toolbar .title {
+            color: #61dafb;
+            font-weight: 600;
+        }
+
+        .toolbar .status {
+            color: #888;
+            font-size: 12px;
+        }
+
+        .editor-wrapper {
+            flex: 1;
+            position: relative;
+            background: #2d2d2d;
+        }
+
+        .line-numbers {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 50px;
+            height: 100%;
+            background: #252525;
+            color: #666;
+            font-family: 'Courier New', Monaco, monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            padding: 15px 8px;
+            border-right: 1px solid #444;
+            user-select: none;
+            overflow: hidden;
+        }
+
+        .editor {
+            position: absolute;
+            left: 50px;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            background: #2d2d2d;
+            color: #e1e1e1;
+            border: none;
+            padding: 15px;
+            font-family: 'Courier New', Monaco, monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            resize: none;
+            outline: none;
+            white-space: pre;
+            tab-size: 4;
+        }
+
+        .editor:focus {
+            background: #2d2d2d;
+        }
+
+        /* Syntax highlighting with CSS (basic) */
+        .syntax-highlight {
+            position: absolute;
+            left: 50px;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            padding: 15px;
+            font-family: 'Courier New', Monaco, monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            pointer-events: none;
+            white-space: pre;
+            overflow: hidden;
+            color: transparent;
+        }
+
+        .keyword { color: #ff79c6; }
+        .string { color: #f1fa8c; }
+        .comment { color: #6272a4; font-style: italic; }
+        .number { color: #bd93f9; }
+        .function { color: #50fa7b; }
+    </style>
+</head>
+<body>
+<div class="editor-container">
+    <div class="toolbar">
+        <span class="title">📝 Code Editor</span>
+        <span class="status" id="status">Ready - Line 1, Column 1</span>
+    </div>
+
+    <div class="editor-wrapper">
+        <div class="line-numbers" id="line-numbers"></div>
+        <textarea class="editor" id="editor" spellcheck="false"></textarea>
+    </div>
+</div>
+
+<script>
+    const editor = document.getElementById('editor');
+    const lineNumbers = document.getElementById('line-numbers');
+    const status = document.getElementById('status');
+
+    const initialCode = `// Welcome to CodeMirror 6 on Android!
+function greetUser(name) {
+console.log(\`Hello, \${name}! Welcome to mobile coding.\`);
+
+// You can edit this code
+const features = [
+    'Syntax highlighting',
+    'Line numbers',
+    'Mobile-friendly',
+    'Dark theme',
+    'No external dependencies'
+];
+
+features.forEach((feature, index) => {
+    console.log(\`\${index + 1}. \${feature}\`);
+});
+
+return \`Thanks for trying this editor on Android!\`;
+}
+
+// Try calling the function
+greetUser('Developer');
+
+class CodeEditor {
+constructor() {
+    this.features = [
+        'Syntax highlighting',
+        'Auto indentation',
+        'Mobile optimized',
+        'Offline capable'
+    ];
+}
+
+getFeatures() {
+    return this.features;
+}
+}
+
+const myEditor = new CodeEditor();
+console.log('Editor features:', myEditor.getFeatures());
+
+// Add your own code below:
+`;
+
+    editor.value = initialCode;
+
+    // Update line numbers
+    function updateLineNumbers() {
+        const lines = editor.value.split('\n');
+        const lineCount = lines.length;
+        let lineNumbersHTML = '';
+
+        for (let i = 1; i <= lineCount; i++) {
+            lineNumbersHTML += i + '\n';
+        }
+
+        lineNumbers.textContent = lineNumbersHTML;
+    }
+
+    // Update status bar
+    function updateStatus() {
+        const cursorPos = editor.selectionStart;
+        const textBeforeCursor = editor.value.substring(0, cursorPos);
+        const lines = textBeforeCursor.split('\n');
+        const currentLine = lines.length;
+        const currentColumn = lines[lines.length - 1].length + 1;
+        const totalLines = editor.value.split('\n').length;
+
+        status.textContent = `Line ${currentLine}, Column ${currentColumn} - ${totalLines} lines total`;
+    }
+
+    // Handle tab key for indentation
+    editor.addEventListener('keydown', function(e) {
+        if (e.key === 'Tab') {
+            e.preventDefault();
+            const start = this.selectionStart;
+            const end = this.selectionEnd;
+
+            // Insert tab character
+            this.value = this.value.substring(0, start) + '    ' + this.value.substring(end);
+            this.selectionStart = this.selectionEnd = start + 4;
+        }
+    });
+
+    // Update line numbers and status on input
+    editor.addEventListener('input', function() {
+        updateLineNumbers();
+        updateStatus();
+    });
+
+    // Update status on cursor movement
+    editor.addEventListener('keyup', updateStatus);
+    editor.addEventListener('mouseup', updateStatus);
+
+    // Android interface functions
+    window.getEditorContent = () => {
+        return editor.value;
+    };
+
+    window.setEditorContent = (content) => {
+        editor.value = content;
+        updateLineNumbers();
+        updateStatus();
+    };
+
+    // Initialize
+    updateLineNumbers();
+    updateStatus();
+
+    console.log('Code editor loaded successfully!');
+    console.log('Available functions:');
+    console.log('- getEditorContent(): Get current code');
+    console.log('- setEditorContent(code): Set new code');
+
+    // Auto-resize handling for mobile
+    function handleResize() {
+        const container = document.querySelector('.editor-container');
+        container.style.height = window.innerHeight + 'px';
+    }
+
+    window.addEventListener('resize', handleResize);
+    handleResize();
+</script>
+</body>
+</html>
+
+<!--Advanced 1-->
+<!--<!DOCTYPE html>-->
+<!--<html lang="en">-->
+<!--<head>-->
+<!--    <meta charset="UTF-8">-->
+<!--    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">-->
+<!--    <title>CodeMirror 6 Premium</title>-->
+<!--    <style>-->
+<!--        * {-->
+<!--            margin: 0;-->
+<!--            padding: 0;-->
+<!--            box-sizing: border-box;-->
+<!--        }-->
+
+<!--        body {-->
+<!--            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;-->
+<!--            background: #0d1117;-->
+<!--            color: #f0f6fc;-->
+<!--            height: 100vh;-->
+<!--            overflow: hidden;-->
+<!--        }-->
+
+<!--        .editor-header {-->
+<!--            background: linear-gradient(135deg, #161b22 0%, #21262d 100%);-->
+<!--            border-bottom: 1px solid #30363d;-->
+<!--            padding: 12px 16px;-->
+<!--            display: flex;-->
+<!--            justify-content: space-between;-->
+<!--            align-items: center;-->
+<!--            box-shadow: 0 1px 3px rgba(0,0,0,0.12);-->
+<!--        }-->
+
+<!--        .editor-title {-->
+<!--            display: flex;-->
+<!--            align-items: center;-->
+<!--            gap: 8px;-->
+<!--            color: #58a6ff;-->
+<!--            font-weight: 600;-->
+<!--            font-size: 15px;-->
+<!--        }-->
+
+<!--        .editor-status {-->
+<!--            display: flex;-->
+<!--            align-items: center;-->
+<!--            gap: 12px;-->
+<!--            font-size: 12px;-->
+<!--            color: #8b949e;-->
+<!--        }-->
+
+<!--        .status-item {-->
+<!--            display: flex;-->
+<!--            align-items: center;-->
+<!--            gap: 4px;-->
+<!--        }-->
+
+<!--        .status-dot {-->
+<!--            width: 6px;-->
+<!--            height: 6px;-->
+<!--            border-radius: 50%;-->
+<!--            background: #3fb950;-->
+<!--        }-->
+
+<!--        .editor-container {-->
+<!--            height: calc(100vh - 49px);-->
+<!--            position: relative;-->
+<!--            background: #0d1117;-->
+<!--        }-->
+
+<!--        .cm-editor {-->
+<!--            height: 100% !important;-->
+<!--            font-size: 14px !important;-->
+<!--            background: transparent !important;-->
+<!--        }-->
+
+<!--        .cm-focused {-->
+<!--            outline: none !important;-->
+<!--        }-->
+
+<!--        .cm-content {-->
+<!--            padding: 16px !important;-->
+<!--            line-height: 1.5 !important;-->
+<!--        }-->
+
+<!--        .cm-scroller {-->
+<!--            font-family: 'SF Mono', Monaco, 'JetBrains Mono', 'Fira Code', 'Cascadia Code', Consolas, 'Courier New', monospace !important;-->
+<!--        }-->
+
+<!--        .cm-gutters {-->
+<!--            background: #0d1117 !important;-->
+<!--            border-right: 1px solid #21262d !important;-->
+<!--        }-->
+
+<!--        .cm-lineNumbers .cm-gutterElement {-->
+<!--            color: #6e7681 !important;-->
+<!--            padding: 0 8px !important;-->
+<!--            min-width: 32px !important;-->
+<!--        }-->
+
+<!--        /* Custom syntax highlighting */-->
+<!--        .cm-editor.cm-focused {-->
+<!--            background: #0d1117 !important;-->
+<!--        }-->
+
+<!--        /* Selection */-->
+<!--        .cm-selectionBackground {-->
+<!--            background: rgba(88, 166, 255, 0.2) !important;-->
+<!--        }-->
+
+<!--        .cm-focused .cm-selectionBackground {-->
+<!--            background: rgba(88, 166, 255, 0.3) !important;-->
+<!--        }-->
+
+<!--        /* Current line */-->
+<!--        .cm-activeLine {-->
+<!--            background: rgba(110, 118, 129, 0.05) !important;-->
+<!--        }-->
+
+<!--        /* Cursor */-->
+<!--        .cm-cursor {-->
+<!--            border-left: 2px solid #58a6ff !important;-->
+<!--        }-->
+
+<!--        /* Matching brackets */-->
+<!--        .cm-matchingBracket {-->
+<!--            background: rgba(88, 166, 255, 0.2) !important;-->
+<!--            border-radius: 2px;-->
+<!--        }-->
+
+<!--        /* Search */-->
+<!--        .cm-searchMatch {-->
+<!--            background: rgba(255, 199, 95, 0.2) !important;-->
+<!--            border: 1px solid rgba(255, 199, 95, 0.4);-->
+<!--            border-radius: 2px;-->
+<!--        }-->
+
+<!--        .cm-searchMatch-selected {-->
+<!--            background: rgba(255, 199, 95, 0.4) !important;-->
+<!--        }-->
+
+<!--        /* Loading state */-->
+<!--        .loading {-->
+<!--            display: flex;-->
+<!--            flex-direction: column;-->
+<!--            justify-content: center;-->
+<!--            align-items: center;-->
+<!--            height: 100%;-->
+<!--            background: #0d1117;-->
+<!--        }-->
+
+<!--        .loading-spinner {-->
+<!--            width: 32px;-->
+<!--            height: 32px;-->
+<!--            border: 3px solid #21262d;-->
+<!--            border-top: 3px solid #58a6ff;-->
+<!--            border-radius: 50%;-->
+<!--            animation: spin 1s linear infinite;-->
+<!--            margin-bottom: 16px;-->
+<!--        }-->
+
+<!--        @keyframes spin {-->
+<!--            0% { transform: rotate(0deg); }-->
+<!--            100% { transform: rotate(360deg); }-->
+<!--        }-->
+
+<!--        .loading-text {-->
+<!--            color: #8b949e;-->
+<!--            font-size: 14px;-->
+<!--        }-->
+
+<!--        /* Error state */-->
+<!--        .error-container {-->
+<!--            padding: 24px;-->
+<!--            background: #0d1117;-->
+<!--            height: 100%;-->
+<!--            overflow-y: auto;-->
+<!--        }-->
+
+<!--        .error-card {-->
+<!--            background: linear-gradient(135deg, #21262d 0%, #161b22 100%);-->
+<!--            border: 1px solid #f85149;-->
+<!--            border-radius: 8px;-->
+<!--            padding: 20px;-->
+<!--            color: #f85149;-->
+<!--        }-->
+
+<!--        .error-title {-->
+<!--            font-size: 16px;-->
+<!--            font-weight: 600;-->
+<!--            margin-bottom: 8px;-->
+<!--            display: flex;-->
+<!--            align-items: center;-->
+<!--            gap: 8px;-->
+<!--        }-->
+
+<!--        .error-message {-->
+<!--            color: #f0f6fc;-->
+<!--            margin-bottom: 16px;-->
+<!--            line-height: 1.5;-->
+<!--        }-->
+
+<!--        .error-details {-->
+<!--            background: #161b22;-->
+<!--            border: 1px solid #30363d;-->
+<!--            border-radius: 6px;-->
+<!--            padding: 12px;-->
+<!--            font-family: monospace;-->
+<!--            font-size: 12px;-->
+<!--            color: #8b949e;-->
+<!--            overflow-x: auto;-->
+<!--        }-->
+
+<!--        /* Mobile optimizations */-->
+<!--        @media (max-width: 768px) {-->
+<!--            .editor-header {-->
+<!--                padding: 10px 12px;-->
+<!--                flex-direction: column;-->
+<!--                align-items: flex-start;-->
+<!--                gap: 6px;-->
+<!--            }-->
+
+<!--            .editor-status {-->
+<!--                font-size: 11px;-->
+<!--                gap: 8px;-->
+<!--            }-->
+
+<!--            .editor-container {-->
+<!--                height: calc(100vh - 70px);-->
+<!--            }-->
+
+<!--            .cm-content {-->
+<!--                padding: 12px !important;-->
+<!--            }-->
+
+<!--            .cm-scroller {-->
+<!--                font-size: 13px !important;-->
+<!--            }-->
+<!--        }-->
+
+<!--        /* Touch improvements */-->
+<!--        .cm-editor {-->
+<!--            touch-action: manipulation;-->
+<!--        }-->
+
+<!--        .cm-content {-->
+<!--            -webkit-touch-callout: none;-->
+<!--            -webkit-user-select: text;-->
+<!--            user-select: text;-->
+<!--        }-->
+<!--    </style>-->
+<!--</head>-->
+<!--<body>-->
+<!--<div class="editor-header">-->
+<!--    <div class="editor-title">-->
+<!--        <span>⚡</span>-->
+<!--        <span>CodeMirror 6 Pro</span>-->
+<!--    </div>-->
+<!--    <div class="editor-status">-->
+<!--        <div class="status-item">-->
+<!--            <div class="status-dot"></div>-->
+<!--            <span id="status-text">Ready</span>-->
+<!--        </div>-->
+<!--        <div class="status-item" id="position-info">-->
+<!--            <span>Line 1:1</span>-->
+<!--        </div>-->
+<!--        <div class="status-item" id="selection-info" style="display: none;">-->
+<!--            <span>Selected: 0</span>-->
+<!--        </div>-->
+<!--    </div>-->
+<!--</div>-->
+
+<!--<div class="editor-container">-->
+<!--    <div class="loading" id="loading">-->
+<!--        <div class="loading-spinner"></div>-->
+<!--        <div class="loading-text">Loading CodeMirror...</div>-->
+<!--    </div>-->
+<!--</div>-->
+
+<!--<script type="module">-->
+<!--    // Enhanced error handling-->
+<!--    window.addEventListener('error', (e) => {-->
+<!--        console.error('Global error:', e);-->
+<!--    });-->
+
+<!--    window.addEventListener('unhandledrejection', (e) => {-->
+<!--        console.error('Unhandled promise rejection:', e);-->
+<!--    });-->
+
+<!--    let editorView = null;-->
+
+<!--    // Premium sample code-->
+<!--    const premiumCode = `// 🚀 Welcome to CodeMirror 6 Pro on Android!-->
+<!--// This is a premium code editor with advanced features-->
+
+<!--/**-->
+<!--* Advanced JavaScript example with modern syntax-->
+<!--* Features: ES6+, async/await, classes, destructuring-->
+<!--*/-->
+
+<!--class MobileCodeEditor {-->
+<!--constructor(config = {}) {-->
+<!--    this.version = '6.0.1';-->
+<!--    this.platform = 'Android';-->
+<!--    this.features = new Set([-->
+<!--        'syntax-highlighting',-->
+<!--        'auto-completion',-->
+<!--        'bracket-matching',-->
+<!--        'search-replace',-->
+<!--        'mobile-optimized',-->
+<!--        'dark-theme',-->
+<!--        'line-numbers',-->
+<!--        'folding',-->
+<!--        'multiple-cursors'-->
+<!--    ]);-->
+
+<!--    this.config = {-->
+<!--        theme: 'dark',-->
+<!--        fontSize: 14,-->
+<!--        tabSize: 4,-->
+<!--        wordWrap: true,-->
+<!--        ...config-->
+<!--    };-->
+<!--}-->
+
+<!--// Async method example-->
+<!--async initialize() {-->
+<!--    console.log(\`🎉 Initializing \${this.constructor.name} v\${this.version}\`);-->
+
+<!--    try {-->
+<!--        await this.loadPlugins();-->
+<!--        await this.setupEventListeners();-->
+<!--        console.log('✅ Editor ready!');-->
+<!--    } catch (error) {-->
+<!--        console.error('❌ Initialization failed:', error);-->
+<!--        throw error;-->
+<!--    }-->
+<!--}-->
+
+<!--async loadPlugins() {-->
+<!--    const plugins = ['autocomplete', 'highlight', 'search'];-->
+
+<!--    for (const plugin of plugins) {-->
+<!--        await this.simulatePluginLoad(plugin);-->
+<!--    }-->
+<!--}-->
+
+<!--simulatePluginLoad(pluginName) {-->
+<!--    return new Promise(resolve => {-->
+<!--        setTimeout(() => {-->
+<!--            console.log(\`📦 Loaded plugin: \${pluginName}\`);-->
+<!--            resolve();-->
+<!--        }, Math.random() * 100);-->
+<!--    });-->
+<!--}-->
+
+<!--setupEventListeners() {-->
+<!--    // Modern event handling with arrow functions-->
+<!--    const events = ['change', 'selection', 'focus', 'blur'];-->
+
+<!--    events.forEach(event => {-->
+<!--        this.on(event, (data) => {-->
+<!--            console.log(\`📡 Event: \${event}\`, data);-->
+<!--        });-->
+<!--    });-->
+<!--}-->
+
+<!--on(event, callback) {-->
+<!--    // Event system simulation-->
+<!--    console.log(\`🎧 Registered listener for: \${event}\`);-->
+<!--}-->
+
+<!--// Destructuring and template literals-->
+<!--getInfo() {-->
+<!--    const { version, platform, features } = this;-->
+<!--    const featureList = [...features].join(', ');-->
+
+<!--    return {-->
+<!--        info: \`Editor v\${version} on \${platform}\`,-->
+<!--        features: featureList,-->
+<!--        stats: {-->
+<!--            featureCount: features.size,-->
+<!--            ready: true-->
+<!--        }-->
+<!--    };-->
+<!--}-->
+
+<!--// Generator function example-->
+<!--*generateLineNumbers(maxLines = 100) {-->
+<!--    for (let i = 1; i <= maxLines; i++) {-->
+<!--        yield \`Line \${i.toString().padStart(3, '0')}\`;-->
+<!--    }-->
+<!--}-->
+
+<!--// Modern array methods-->
+<!--analyzeCode(codeLines) {-->
+<!--    return codeLines-->
+<!--        .map(line => line.trim())-->
+<!--        .filter(line => line.length > 0)-->
+<!--        .filter(line => !line.startsWith('//'))-->
+<!--        .reduce((stats, line) => {-->
+<!--            stats.totalChars += line.length;-->
+<!--            stats.lineCount++;-->
+<!--            return stats;-->
+<!--        }, { totalChars: 0, lineCount: 0 });-->
+<!--}-->
+<!--}-->
+
+<!--// Usage example with async/await-->
+<!--(async () => {-->
+<!--try {-->
+<!--    const editor = new MobileCodeEditor({-->
+<!--        theme: 'github-dark',-->
+<!--        fontSize: 14-->
+<!--    });-->
+
+<!--    await editor.initialize();-->
+
+<!--    // Destructuring assignment-->
+<!--    const { info, features, stats } = editor.getInfo();-->
+<!--    console.log('📊', { info, features, stats });-->
+
+<!--    // Generator usage-->
+<!--    const lineGen = editor.generateLineNumbers(5);-->
+<!--    for (const line of lineGen) {-->
+<!--        console.log(line);-->
+<!--    }-->
+
+<!--    // Modern array methods-->
+<!--    const sampleCode = [-->
+<!--        'function hello() {',-->
+<!--        '  // This is a comment',-->
+<!--        '  return "Hello World!";',-->
+<!--        '}',-->
+<!--        '',-->
+<!--        'console.log(hello());'-->
+<!--    ];-->
+
+<!--    const analysis = editor.analyzeCode(sampleCode);-->
+<!--    console.log('📈 Code Analysis:', analysis);-->
+
+<!--} catch (error) {-->
+<!--    console.error('💥 Error:', error.message);-->
+<!--}-->
+<!--})();-->
+
+<!--// 🎯 Add your own code below this line:-->
+<!--`;-->
+
+<!--    // Status management-->
+<!--    function updateStatus(text) {-->
+<!--        document.getElementById('status-text').textContent = text;-->
+<!--    }-->
+
+<!--    function updatePositionInfo(line, col, selected = 0) {-->
+<!--        document.getElementById('position-info').innerHTML =-->
+<!--            \`<span>Line \${line}:\${col}</span>\`;-->
+
+<!--        const selectionInfo = document.getElementById('selection-info');-->
+<!--        if (selected > 0) {-->
+<!--            selectionInfo.style.display = 'flex';-->
+<!--            selectionInfo.innerHTML = \`<span>Selected: \${selected}</span>\`;-->
+<!--        } else {-->
+<!--            selectionInfo.style.display = 'none';-->
+<!--        }-->
+<!--    }-->
+
+<!--    function showError(error) {-->
+<!--        const container = document.querySelector('.editor-container');-->
+<!--        container.innerHTML = \`-->
+<!--            <div class="error-container">-->
+<!--                <div class="error-card">-->
+<!--                    <div class="error-title">-->
+<!--                        <span>❌</span>-->
+<!--                        <span>Failed to load CodeMirror</span>-->
+<!--                    </div>-->
+<!--                    <div class="error-message">-->
+<!--                        <strong>Error:</strong> \${error.message}-->
+<!--                    </div>-->
+<!--                    <div class="error-details">-->
+<!--                        <strong>Stack Trace:</strong><br>-->
+<!--                        \${error.stack?.replace(/\\n/g, '<br>') || 'No stack trace available'}-->
+<!--                    </div>-->
+<!--                </div>-->
+<!--            </div>-->
+<!--        \`;-->
+<!--    }-->
+
+<!--    async function initializeCodeMirror() {-->
+<!--        try {-->
+<!--            updateStatus('Loading modules...');-->
+
+<!--            // Import CodeMirror modules with error handling-->
+<!--            const imports = await Promise.all([-->
+<!--                import('https://esm.sh/codemirror@6.0.1'),-->
+<!--                import('https://esm.sh/@codemirror/lang-javascript@6.2.1'),-->
+<!--                import('https://esm.sh/@codemirror/theme-one-dark@6.1.2'),-->
+<!--                import('https://esm.sh/@codemirror/state@6.4.0'),-->
+<!--                import('https://esm.sh/@codemirror/view@6.21.3'),-->
+<!--                import('https://esm.sh/@codemirror/search@6.5.4'),-->
+<!--                import('https://esm.sh/@codemirror/autocomplete@6.10.2'),-->
+<!--                import('https://esm.sh/@codemirror/lint@6.4.2'),-->
+<!--                import('https://esm.sh/@codemirror/commands@6.3.0')-->
+<!--            ]);-->
+
+<!--            const [-->
+<!--                { EditorView, basicSetup },-->
+<!--                { javascript },-->
+<!--                { oneDark },-->
+<!--                { EditorState },-->
+<!--                viewModule,-->
+<!--                { searchKeymap, highlightSelectionMatches },-->
+<!--                { autocompletion, completionKeymap },-->
+<!--                { linter, lintKeymap },-->
+<!--                { history, defaultKeymap, historyKeymap }-->
+<!--            ] = imports;-->
+
+<!--            updateStatus('Creating editor...');-->
+
+<!--            // Advanced editor configuration-->
+<!--            const state = EditorState.create({-->
+<!--                doc: premiumCode,-->
+<!--                extensions: [-->
+<!--                    basicSetup,-->
+<!--                    javascript(),-->
+<!--                    oneDark,-->
+<!--                    history(),-->
+<!--                    autocompletion(),-->
+<!--                    highlightSelectionMatches(),-->
+
+<!--                    // Enhanced keymap-->
+<!--                    EditorView.keymap.of([-->
+<!--                        ...defaultKeymap,-->
+<!--                        ...searchKeymap,-->
+<!--                        ...historyKeymap,-->
+<!--                        ...completionKeymap,-->
+<!--                        ...lintKeymap-->
+<!--                    ]),-->
+
+<!--                    // Custom theme overrides-->
+<!--                    EditorView.theme({-->
+<!--                        '&': {-->
+<!--                            height: '100%',-->
+<!--                            fontSize: '14px'-->
+<!--                        },-->
+<!--                        '.cm-content': {-->
+<!--                            padding: '16px',-->
+<!--                            minHeight: '100%'-->
+<!--                        },-->
+<!--                        '.cm-focused': {-->
+<!--                            outline: 'none'-->
+<!--                        },-->
+<!--                        '.cm-editor': {-->
+<!--                            height: '100%'-->
+<!--                        },-->
+<!--                        '.cm-scroller': {-->
+<!--                            fontFamily: "'SF Mono', Monaco, 'JetBrains Mono', 'Fira Code', Consolas, monospace"-->
+<!--                        }-->
+<!--                    }),-->
+
+<!--                    // Update position info on cursor change-->
+<!--                    EditorView.updateListener.of((update) => {-->
+<!--                        if (update.selectionSet || update.docChanged) {-->
+<!--                            const { state } = update;-->
+<!--                            const { from, to } = state.selection.main;-->
+<!--                            const line = state.doc.lineAt(from);-->
+<!--                            const col = from - line.from + 1;-->
+<!--                            const selected = to - from;-->
+
+<!--                            updatePositionInfo(line.number, col, selected);-->
+
+<!--                            if (update.docChanged) {-->
+<!--                                const lineCount = state.doc.lines;-->
+<!--                                const charCount = state.doc.length;-->
+<!--                                updateStatus(\`\${lineCount} lines, \${charCount} characters\`);-->
+<!--                            }-->
+<!--                        }-->
+<!--                    })-->
+<!--                ]-->
+<!--            });-->
+
+<!--            // Clear loading and create editor-->
+<!--            document.getElementById('loading').remove();-->
+
+<!--            editorView = new EditorView({-->
+<!--                state,-->
+<!--                parent: document.querySelector('.editor-container')-->
+<!--            });-->
+
+<!--            // Android interface functions-->
+<!--            window.getEditorContent = () => {-->
+<!--                return editorView?.state.doc.toString() || '';-->
+<!--            };-->
+
+<!--            window.setEditorContent = (content) => {-->
+<!--                if (!editorView) return;-->
+
+<!--                editorView.dispatch({-->
+<!--                    changes: {-->
+<!--                        from: 0,-->
+<!--                        to: editorView.state.doc.length,-->
+<!--                        insert: content-->
+<!--                    }-->
+<!--                });-->
+
+<!--                updateStatus('Content updated from Android');-->
+<!--            };-->
+
+<!--            // Additional utility functions-->
+<!--            window.getEditorStats = () => {-->
+<!--                if (!editorView) return null;-->
+
+<!--                const doc = editorView.state.doc;-->
+<!--                const selection = editorView.state.selection.main;-->
+
+<!--                return {-->
+<!--                    lines: doc.lines,-->
+<!--                    characters: doc.length,-->
+<!--                    selected: selection.to - selection.from,-->
+<!--                    cursor: {-->
+<!--                        line: doc.lineAt(selection.from).number,-->
+<!--                        column: selection.from - doc.lineAt(selection.from).from + 1-->
+<!--                    }-->
+<!--                };-->
+<!--            };-->
+
+<!--            window.focusEditor = () => {-->
+<!--                editorView?.focus();-->
+<!--            };-->
+
+<!--            // Initialize position info-->
+<!--            const line = editorView.state.doc.lineAt(0);-->
+<!--            updatePositionInfo(1, 1);-->
+<!--            updateStatus(\`\${editorView.state.doc.lines} lines, \${editorView.state.doc.length} characters\`);-->
+
+<!--            console.log('🚀 CodeMirror 6 Pro loaded successfully!');-->
+<!--            console.log('📱 Android functions available:');-->
+<!--            console.log('  - getEditorContent()');-->
+<!--            console.log('  - setEditorContent(code)');-->
+<!--            console.log('  - getEditorStats()');-->
+<!--            console.log('  - focusEditor()');-->
+
+<!--        } catch (error) {-->
+<!--            console.error('❌ Failed to initialize CodeMirror:', error);-->
+<!--            showError(error);-->
+<!--        }-->
+<!--    }-->
+
+<!--    // Start initialization-->
+<!--    initializeCodeMirror();-->
+<!--</script>-->
+<!--</body>-->
+<!--</html>-->
+
+
+
+<!--<!DOCTYPE html>-->
+<!--<html lang="en">-->
+<!--<head>-->
+<!--    <meta charset="UTF-8">-->
+<!--    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">-->
+<!--    <title>CodeMirror Editor</title>-->
+<!--    <style>-->
+<!--        * {-->
+<!--            box-sizing: border-box;-->
+<!--            margin: 0;-->
+<!--            padding: 0;-->
+<!--        }-->
+
+<!--        html, body {-->
+<!--            height: 100%;-->
+<!--            width: 100%;-->
+<!--            overflow: hidden;-->
+<!--            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;-->
+<!--            background: #1a1a1a;-->
+<!--            color: #ffffff;-->
+<!--        }-->
+
+<!--        .container {-->
+<!--            display: flex;-->
+<!--            flex-direction: column;-->
+<!--            height: 100vh;-->
+<!--            width: 100vw;-->
+<!--        }-->
+
+<!--        .header {-->
+<!--            background: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%);-->
+<!--            border-bottom: 1px solid #444;-->
+<!--            padding: 8px 12px;-->
+<!--            flex-shrink: 0;-->
+<!--            display: flex;-->
+<!--            justify-content: space-between;-->
+<!--            align-items: center;-->
+<!--            min-height: 40px;-->
+<!--        }-->
+
+<!--        .title {-->
+<!--            color: #4a9eff;-->
+<!--            font-weight: 600;-->
+<!--            font-size: 14px;-->
+<!--        }-->
+
+<!--        .status {-->
+<!--            color: #4CAF50;-->
+<!--            font-size: 11px;-->
+<!--            font-weight: 500;-->
+<!--        }-->
+
+<!--        .editor-wrapper {-->
+<!--            flex: 1;-->
+<!--            display: flex;-->
+<!--            min-height: 0;-->
+<!--            overflow: hidden;-->
+<!--            position: relative;-->
+<!--        }-->
+
+<!--        .line-numbers {-->
+<!--            background: #2d2d2d;-->
+<!--            color: #666;-->
+<!--            padding: 8px 8px 8px 4px;-->
+<!--            text-align: right;-->
+<!--            user-select: none;-->
+<!--            min-width: 40px;-->
+<!--            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;-->
+<!--            font-size: 13px;-->
+<!--            line-height: 1.4;-->
+<!--            border-right: 1px solid #444;-->
+<!--            overflow: hidden;-->
+<!--            white-space: pre;-->
+<!--            flex-shrink: 0;-->
+<!--        }-->
+
+<!--        .editor {-->
+<!--            flex: 1;-->
+<!--            background: #1a1a1a;-->
+<!--            color: #ffffff;-->
+<!--            border: none;-->
+<!--            outline: none;-->
+<!--            padding: 8px 12px;-->
+<!--            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;-->
+<!--            font-size: 13px;-->
+<!--            line-height: 1.4;-->
+<!--            resize: none;-->
+<!--            tab-size: 4;-->
+<!--            white-space: pre;-->
+<!--            overflow: auto;-->
+<!--            -webkit-overflow-scrolling: touch;-->
+<!--        }-->
+
+<!--        .editor::placeholder {-->
+<!--            color: #666;-->
+<!--            opacity: 0.8;-->
+<!--        }-->
+
+<!--        .editor:focus {-->
+<!--            background: #1a1a1a;-->
+<!--        }-->
+
+<!--        /* Prevent zooming on mobile */-->
+<!--        .editor {-->
+<!--            touch-action: manipulation;-->
+<!--        }-->
+
+<!--        /* Loading overlay */-->
+<!--        .loading-overlay {-->
+<!--            position: absolute;-->
+<!--            top: 0;-->
+<!--            left: 0;-->
+<!--            right: 0;-->
+<!--            bottom: 0;-->
+<!--            background: rgba(26, 26, 26, 0.9);-->
+<!--            display: flex;-->
+<!--            justify-content: center;-->
+<!--            align-items: center;-->
+<!--            color: #888;-->
+<!--            font-size: 14px;-->
+<!--            z-index: 1000;-->
+<!--        }-->
+
+<!--        .loading-overlay.hidden {-->
+<!--            display: none;-->
+<!--        }-->
+
+<!--        .spinner {-->
+<!--            width: 20px;-->
+<!--            height: 20px;-->
+<!--            border: 2px solid #444;-->
+<!--            border-top: 2px solid #4a9eff;-->
+<!--            border-radius: 50%;-->
+<!--            animation: spin 1s linear infinite;-->
+<!--            margin-right: 10px;-->
+<!--        }-->
+
+<!--        @keyframes spin {-->
+<!--            0% { transform: rotate(0deg); }-->
+<!--            100% { transform: rotate(360deg); }-->
+<!--        }-->
+
+<!--        /* Mobile optimizations */-->
+<!--        @media (max-width: 768px) {-->
+<!--            .header {-->
+<!--                padding: 6px 10px;-->
+<!--                min-height: 36px;-->
+<!--            }-->
+
+<!--            .title {-->
+<!--                font-size: 12px;-->
+<!--            }-->
+
+<!--            .status {-->
+<!--                font-size: 10px;-->
+<!--            }-->
+
+<!--            .line-numbers {-->
+<!--                min-width: 32px;-->
+<!--                padding: 6px 6px 6px 2px;-->
+<!--                font-size: 11px;-->
+<!--            }-->
+
+<!--            .editor {-->
+<!--                padding: 6px 10px;-->
+<!--                font-size: 12px;-->
+<!--            }-->
+<!--        }-->
+<!--    </style>-->
+<!--</head>-->
+<!--<body>-->
+<!--<div class="container">-->
+<!--    <div class="header">-->
+<!--        <div class="title">JavaScript Code Editor</div>-->
+<!--        <div class="status" id="status">Initializing...</div>-->
+<!--    </div>-->
+
+<!--    <div class="editor-wrapper">-->
+<!--        <div class="loading-overlay" id="loadingOverlay">-->
+<!--            <div class="spinner"></div>-->
+<!--            <span>Loading editor...</span>-->
+<!--        </div>-->
+
+<!--        <div class="line-numbers" id="lineNumbers">1</div>-->
+<!--        <textarea-->
+<!--                class="editor"-->
+<!--                id="editor"-->
+<!--                placeholder="// Welcome to the JavaScript Code Editor-->
+<!--// Start typing your code here...-->
+
+<!--console.log('Hello, World!');-->
+
+<!--function greet(name) {-->
+<!--    return `Hello, ${name}!`;-->
+<!--}-->
+
+<!--const message = greet('Developer');-->
+<!--console.log(message);-->
+
+<!--// Try some array operations-->
+<!--const numbers = [1, 2, 3, 4, 5];-->
+<!--const squares = numbers.map(x => x * x);-->
+<!--console.log('Squares:', squares);-->
+
+<!--// Object example-->
+<!--const person = {-->
+<!--    name: 'Alice',-->
+<!--    age: 30,-->
+<!--    greet() {-->
+<!--        return `Hi, I'm ${this.name}`;-->
+<!--    }-->
+<!--};-->
+
+<!--console.log(person.greet());"-->
+<!--                spellcheck="false"-->
+<!--                autocomplete="off"-->
+<!--                autocorrect="off"-->
+<!--                autocapitalize="off"-->
+<!--                wrap="off"-->
+<!--        ></textarea>-->
+<!--    </div>-->
+<!--</div>-->
+
+<!--<script>-->
+<!--    console.log('🚀 Starting editor initialization...');-->
+
+<!--    class JavaScriptCodeEditor {-->
+<!--        constructor() {-->
+<!--            this.editor = null;-->
+<!--            this.lineNumbers = null;-->
+<!--            this.status = null;-->
+<!--            this.loadingOverlay = null;-->
+<!--            this.isReady = false;-->
+<!--            this.init();-->
+<!--        }-->
+
+<!--        init() {-->
+<!--            try {-->
+<!--                console.log('📝 Initializing editor elements...');-->
+
+<!--                this.editor = document.getElementById('editor');-->
+<!--                this.lineNumbers = document.getElementById('lineNumbers');-->
+<!--                this.status = document.getElementById('status');-->
+<!--                this.loadingOverlay = document.getElementById('loadingOverlay');-->
+
+<!--                if (!this.editor || !this.lineNumbers || !this.status) {-->
+<!--                    throw new Error('Required DOM elements not found');-->
+<!--                }-->
+
+<!--                this.setupEventListeners();-->
+<!--                this.updateLineNumbers();-->
+<!--                this.updateStatus('Ready');-->
+
+<!--                // Setup Android interface-->
+<!--                this.setupAndroidInterface();-->
+
+<!--                // Hide loading overlay-->
+<!--                this.hideLoading();-->
+
+<!--                this.isReady = true;-->
+<!--                console.log('✅ Editor initialized successfully!');-->
+
+<!--                // Focus the editor-->
+<!--                setTimeout(() => {-->
+<!--                    this.editor.focus();-->
+<!--                }, 100);-->
+
+<!--            } catch (error) {-->
+<!--                console.error('❌ Editor initialization failed:', error);-->
+<!--                this.updateStatus('Error: ' + error.message);-->
+<!--            }-->
+<!--        }-->
+
+<!--        setupEventListeners() {-->
+<!--            // Update line numbers and status on input-->
+<!--            this.editor.addEventListener('input', () => {-->
+<!--                this.updateLineNumbers();-->
+<!--                this.updateStatusWithStats();-->
+<!--            });-->
+
+<!--            // Sync scroll between editor and line numbers-->
+<!--            this.editor.addEventListener('scroll', () => {-->
+<!--                this.lineNumbers.scrollTop = this.editor.scrollTop;-->
+<!--            });-->
+
+<!--            // Handle tab key-->
+<!--            this.editor.addEventListener('keydown', (e) => {-->
+<!--                if (e.key === 'Tab') {-->
+<!--                    e.preventDefault();-->
+<!--                    this.insertTab();-->
+<!--                } else if (e.key === 'Enter') {-->
+<!--                    setTimeout(() => this.handleNewLine(), 0);-->
+<!--                }-->
+<!--            });-->
+
+<!--            // Update cursor position-->
+<!--            this.editor.addEventListener('selectionchange', () => this.updateCursor());-->
+<!--            this.editor.addEventListener('keyup', () => this.updateCursor());-->
+<!--            this.editor.addEventListener('click', () => this.updateCursor());-->
+
+<!--            console.log('📋 Event listeners setup complete');-->
+<!--        }-->
+
+<!--        setupAndroidInterface() {-->
+<!--            // Android interface functions-->
+<!--            window.getEditorContent = () => {-->
+<!--                console.log('📖 Getting editor content...');-->
+<!--                return this.getContent();-->
+<!--            };-->
+
+<!--            window.setEditorContent = (content) => {-->
+<!--                console.log('📝 Setting editor content...');-->
+<!--                return this.setContent(content);-->
+<!--            };-->
+
+<!--            window.focusEditor = () => {-->
+<!--                console.log('🎯 Focusing editor...');-->
+<!--                return this.focus();-->
+<!--            };-->
+
+<!--            window.getEditorStats = () => {-->
+<!--                console.log('📊 Getting editor stats...');-->
+<!--                return this.getStats();-->
+<!--            };-->
+
+<!--            // Test function for debugging-->
+<!--            window.testEditor = () => {-->
+<!--                console.log('🧪 Running editor test...');-->
+<!--                const stats = this.getStats();-->
+<!--                console.log('Editor stats:', stats);-->
+<!--                return {-->
+<!--                    ready: this.isReady,-->
+<!--                    stats: stats,-->
+<!--                    contentLength: this.getContent().length-->
+<!--                };-->
+<!--            };-->
+
+<!--            console.log('🔗 Android interface setup complete');-->
+<!--        }-->
+
+<!--        hideLoading() {-->
+<!--            if (this.loadingOverlay) {-->
+<!--                this.loadingOverlay.classList.add('hidden');-->
+<!--            }-->
+<!--        }-->
+
+<!--        insertTab() {-->
+<!--            const start = this.editor.selectionStart;-->
+<!--            const end = this.editor.selectionEnd;-->
+<!--            const value = this.editor.value;-->
+
+<!--            this.editor.value = value.substring(0, start) + '    ' + value.substring(end);-->
+<!--            this.editor.selectionStart = this.editor.selectionEnd = start + 4;-->
+
+<!--            this.updateLineNumbers();-->
+<!--            this.updateStatusWithStats();-->
+<!--        }-->
+
+<!--        handleNewLine() {-->
+<!--            const start = this.editor.selectionStart;-->
+<!--            const value = this.editor.value;-->
+<!--            const lineStart = value.lastIndexOf('\n', start - 2) + 1;-->
+<!--            const currentLine = value.substring(lineStart, start - 1);-->
+<!--            const indent = currentLine.match(/^[ \t]*/)[0];-->
+
+<!--            if (indent) {-->
+<!--                const beforeCursor = value.substring(0, start);-->
+<!--                const afterCursor = value.substring(start);-->
+<!--                this.editor.value = beforeCursor + indent + afterCursor;-->
+<!--                this.editor.selectionStart = this.editor.selectionEnd = start + indent.length;-->
+<!--            }-->
+
+<!--            this.updateLineNumbers();-->
+<!--            this.updateStatusWithStats();-->
+<!--        }-->
+
+<!--        updateLineNumbers() {-->
+<!--            const lines = this.editor.value.split('\n').length;-->
+<!--            let numbers = '';-->
+<!--            for (let i = 1; i <= lines; i++) {-->
+<!--                numbers += i + '\n';-->
+<!--            }-->
+<!--            this.lineNumbers.textContent = numbers.trim();-->
+<!--        }-->
+
+<!--        updateStatus(message) {-->
+<!--            if (this.status) {-->
+<!--                this.status.textContent = message;-->
+<!--            }-->
+<!--        }-->
+
+<!--        updateStatusWithStats() {-->
+<!--            const lines = this.editor.value.split('\n').length;-->
+<!--            const chars = this.editor.value.length;-->
+<!--            this.updateStatus(`${lines} lines • ${chars} chars`);-->
+<!--        }-->
+
+<!--        updateCursor() {-->
+<!--            const start = this.editor.selectionStart;-->
+<!--            const value = this.editor.value;-->
+<!--            const beforeCursor = value.substring(0, start);-->
+<!--            const lines = beforeCursor.split('\n');-->
+<!--            const line = lines.length;-->
+<!--            const col = lines[lines.length - 1].length + 1;-->
+
+<!--            const totalLines = this.editor.value.split('\n').length;-->
+<!--            this.updateStatus(`Line ${line}:${col} • ${totalLines} lines`);-->
+<!--        }-->
+
+<!--        // API methods for Android-->
+<!--        getContent() {-->
+<!--            if (!this.editor) return '';-->
+<!--            return this.editor.value;-->
+<!--        }-->
+
+<!--        setContent(content) {-->
+<!--            if (!this.editor) return false;-->
+
+<!--            try {-->
+<!--                this.editor.value = content || '';-->
+<!--                this.updateLineNumbers();-->
+<!--                this.updateStatusWithStats();-->
+<!--                console.log('✅ Content set successfully, length:', content?.length || 0);-->
+<!--                return true;-->
+<!--            } catch (error) {-->
+<!--                console.error('❌ Failed to set content:', error);-->
+<!--                return false;-->
+<!--            }-->
+<!--        }-->
+
+<!--        focus() {-->
+<!--            if (!this.editor) return false;-->
+
+<!--            try {-->
+<!--                this.editor.focus();-->
+<!--                return true;-->
+<!--            } catch (error) {-->
+<!--                console.error('❌ Failed to focus editor:', error);-->
+<!--                return false;-->
+<!--            }-->
+<!--        }-->
+
+<!--        getStats() {-->
+<!--            if (!this.editor) return null;-->
+
+<!--            try {-->
+<!--                const value = this.editor.value;-->
+<!--                const lines = value.split('\n');-->
+<!--                const start = this.editor.selectionStart;-->
+<!--                const beforeCursor = value.substring(0, start);-->
+<!--                const cursorLines = beforeCursor.split('\n');-->
+
+<!--                const stats = {-->
+<!--                    lines: lines.length,-->
+<!--                    characters: value.length,-->
+<!--                    words: value.trim() ? value.trim().split(/\s+/).length : 0,-->
+<!--                    cursor: {-->
+<!--                        line: cursorLines.length,-->
+<!--                        column: cursorLines[cursorLines.length - 1].length + 1,-->
+<!--                        position: start-->
+<!--                    },-->
+<!--                    selection: {-->
+<!--                        start: this.editor.selectionStart,-->
+<!--                        end: this.editor.selectionEnd,-->
+<!--                        length: this.editor.selectionEnd - this.editor.selectionStart-->
+<!--                    },-->
+<!--                    ready: this.isReady-->
+<!--                };-->
+
+<!--                return stats;-->
+<!--            } catch (error) {-->
+<!--                console.error('❌ Failed to get stats:', error);-->
+<!--                return null;-->
+<!--            }-->
+<!--        }-->
+<!--    }-->
+
+<!--    // Initialize when DOM is ready-->
+<!--    let editor;-->
+
+<!--    if (document.readyState === 'loading') {-->
+<!--        document.addEventListener('DOMContentLoaded', () => {-->
+<!--            editor = new JavaScriptCodeEditor();-->
+<!--        });-->
+<!--    } else {-->
+<!--        editor = new JavaScriptCodeEditor();-->
+<!--    }-->
+
+<!--    // Prevent zoom on double tap (iOS Safari)-->
+<!--    let lastTouchEnd = 0;-->
+<!--    document.addEventListener('touchend', (event) => {-->
+<!--        const now = (new Date()).getTime();-->
+<!--        if (now - lastTouchEnd <= 300) {-->
+<!--            event.preventDefault();-->
+<!--        }-->
+<!--        lastTouchEnd = now;-->
+<!--    }, false);-->
+
+<!--    // Additional mobile optimizations-->
+<!--    document.addEventListener('touchstart', (event) => {-->
+<!--        if (event.touches.length > 1) {-->
+<!--            event.preventDefault(); // Prevent pinch zoom-->
+<!--        }-->
+<!--    }, { passive: false });-->
+
+<!--    // Debug function for testing-->
+<!--    window.debugEditor = () => {-->
+<!--        console.log('🔍 Debug Info:');-->
+<!--        console.log('- Editor ready:', editor?.isReady || false);-->
+<!--        console.log('- Functions available:', {-->
+<!--            getEditorContent: typeof window.getEditorContent,-->
+<!--            setEditorContent: typeof window.setEditorContent,-->
+<!--            focusEditor: typeof window.focusEditor,-->
+<!--            getEditorStats: typeof window.getEditorStats-->
+<!--        });-->
+
+<!--        if (editor && editor.isReady) {-->
+<!--            console.log('- Current content length:', editor.getContent().length);-->
+<!--            console.log('- Current stats:', editor.getStats());-->
+<!--        }-->
+<!--    };-->
+
+<!--    console.log('🎉 JavaScript loaded successfully!');-->
+<!--</script>-->
+<!--</body>-->
+<!--</html>-->
