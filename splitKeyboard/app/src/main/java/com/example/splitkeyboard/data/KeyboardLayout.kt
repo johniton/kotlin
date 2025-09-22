@@ -1,8 +1,6 @@
 package com.example.splitkeyboard.data
 
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.splitkeyboard.model.Key
-import com.example.splitkeyboard.model.KeyType
 import com.example.splitkeyboard.model.KeyType.*
 
 object KeyboardLayout {
@@ -39,7 +37,7 @@ object KeyboardLayout {
         ),
         // Row 4
         listOf(
-            Key("Shift", type = ACTION_SHIFT, weight = NORMAL_KEY),
+            Key("Shift", shiftText = "⬆\uFE0F", type = ACTION_SHIFT, weight = NORMAL_KEY),
             Key("z", "Z", NORMAL_KEY), Key("x", "X", NORMAL_KEY), Key("c", "C", NORMAL_KEY),
             Key("v", "V", NORMAL_KEY), Key("b", "B", NORMAL_KEY), Key("n", "N", NORMAL_KEY),
             Key("m", "M", NORMAL_KEY),Key(text = ",", shiftText = ",", weight = NORMAL_KEY),Key(text = ".", shiftText = ".", weight = NORMAL_KEY)
@@ -99,3 +97,69 @@ object KeyboardLayout {
         )
     )
 }
+//@Composable
+//fun RowScope.KeyboardKey(
+//    key: Key,
+//    isCapsLockOn: Boolean,
+//    onKeyPress: (String) -> Unit,
+//    modifier: Modifier = Modifier
+//) {
+//    val interactionSource = remember { MutableInteractionSource() }
+//    val isPressed by interactionSource.collectIsPressedAsState()
+//
+//    // Animate scale
+//    val scale by animateFloatAsState(
+//        targetValue = if (isPressed) 0.92f else 1.0f,
+//        label = "keyScaleAnimation"
+//    )
+//
+//    val textToShow = when {
+//        isCapsLockOn -> key.shiftText ?: key.text.uppercase()
+//        else -> key.text
+//    }
+//
+//    // Base colors per key type (dark theme palette)
+//    val baseColor = when (key.type) {
+//        KeyType.CHARACTER -> Color(0xFF1C1C1E) // dark charcoal
+//        KeyType.ACTION_SHIFT,
+//        KeyType.ACTION_ENTER,
+//        KeyType.ACTION_BACKSPACE -> Color(0xFF2C2C30) // slightly lighter gray
+//        else -> Color(0xFF050A30) // deep accent blue
+//    }
+//
+//    // Pressed → slightly darker
+//    val backgroundColor = if (isPressed) baseColor.copy(alpha = 0.85f) else baseColor
+//
+//    Surface(
+//        modifier = Modifier
+//            .graphicsLayer(scaleX = scale, scaleY = scale) // keep press animation
+//            .weight(key.weight)
+//            .padding(1.dp)
+//            .fillMaxHeight()
+//            .clickable(
+//                interactionSource = interactionSource,
+//                indication = null,
+//                onClick = { onKeyPress(textToShow) }
+//            ),
+//        color = backgroundColor,
+//        tonalElevation = 3.dp,
+//        shape = RoundedCornerShape(6.dp),
+//        border = BorderStroke(
+//            1.dp,
+//            if (isCapsLockOn && key.text=="⇧")
+//                Color(0xFF00E5FF) // teal glow for active Caps
+//            else Color(0xFF2E2E38)
+//        )
+//    ) {
+//        Box(
+//            contentAlignment = Alignment.Center,
+//            modifier = Modifier.fillMaxSize()
+//        ) {
+//            Text(
+//                text = textToShow,
+//                style = MaterialTheme.typography.bodySmall,
+//                color = if (isPressed) Color(0xFFB0C4DE) else Color.White
+//            )
+//        }
+//    }
+//}

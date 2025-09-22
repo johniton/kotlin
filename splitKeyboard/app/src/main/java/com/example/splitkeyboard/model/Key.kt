@@ -1,6 +1,5 @@
 package com.example.splitkeyboard.model
 
-import androidx.compose.ui.unit.dp
 // Defines the type of action a key performs
 enum class KeyType {
     CHARACTER,

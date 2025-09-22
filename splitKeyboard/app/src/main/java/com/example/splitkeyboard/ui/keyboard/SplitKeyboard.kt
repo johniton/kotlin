@@ -42,7 +42,8 @@ fun SplitKeyboard(
         modifier = modifier
             .fillMaxWidth()
             .height(keyboardHeight)
-            .padding(vertical = 4.dp, horizontal = 2.dp),
+            .padding(vertical = 4.dp, horizontal = 2.dp)
+            .background(color = Color.Red),
         verticalArrangement = Arrangement.SpaceEvenly
     ) {
         layout.forEach { rowOfKeys ->
