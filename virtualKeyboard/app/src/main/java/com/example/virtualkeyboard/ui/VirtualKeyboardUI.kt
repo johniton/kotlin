@@ -3,17 +3,15 @@ package com.example.virtualkeyboard.ui
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.util.Log
 import android.view.HapticFeedbackConstants
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
@@ -36,7 +34,6 @@ import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.geometry.Size
-import androidx.compose.runtime.*
 
 @SuppressLint("UnusedBoxWithConstraintsScope")
 @Composable
@@ -218,9 +215,11 @@ fun VirtualKeyboardDemo() {
 
     // Collect states
     val calibrationState by viewModel.calibrationState.collectAsState()
-    val fingerPosition by viewModel.transformedFingerPosition.collectAsState()
+//    val fingerPosition by viewModel.transformedFingerPosition.collectAsState()
+    val transformedFingerPositions by viewModel.transformedFingerPositions.collectAsState()
     val inputText by viewModel.inputText.collectAsState()
     val isCameraReady by viewModel.isCameraReady.collectAsState()
+
 
     // Handle tap events for haptic feedback
     LaunchedEffect(Unit) {
@@ -305,24 +304,6 @@ fun VirtualKeyboardDemo() {
                     showCalibrationUI = calibrationState == CalibrationState.InProgress
                 )
             }
-//            calibrationState == CalibrationState.InProgress -> {
-//                CalibrationScreen(
-//                    viewModel = viewModel,
-//                    onCameraManagerCreated = { manager -> cameraManager = manager }
-//                )
-//            }
-//
-//            calibrationState == CalibrationState.Completed && isCameraReady -> {
-//                VirtualKeyboardScreen(
-//                    viewModel = viewModel,
-//                    fingerPosition = fingerPosition,
-//                    onReset = {
-//                        viewModel.resetCalibration()
-//                        cameraManager?.shutdown()
-//                        cameraManager = null
-//                    }
-//                )
-//            }
         }
 
         // Error display
@@ -483,16 +464,6 @@ fun CalibrationScreen(
             modifier = Modifier.fillMaxSize()
         )
 
-        // Calibration overlay
-//        CalibrationOverlay(
-//            calibrationPoints = calibrationPoints,
-//            onPointDrag = { index, x, y ->
-//                viewModel.updateCalibrationPoint(index, x, y)
-//            },
-//            onCalibrationComplete = {
-//                viewModel.completeCalibration()
-//            }
-//        )
         if (showCalibrationUI) {
             CalibrationOverlay(
                 calibrationPoints = calibrationPoints,
@@ -505,11 +476,12 @@ fun CalibrationScreen(
             )
         } else {
             // Show keyboard overlay
-            val fingerPosition by viewModel.transformedFingerPosition.collectAsState()
+//            val fingerPosition by viewModel.transformedFingerPosition.collectAsState()
+            val transformedFingerPositions by viewModel.transformedFingerPositions.collectAsState()
             val keyboardLayout by viewModel.keyboardLayout.collectAsState()
 
             Canvas(modifier = Modifier.fillMaxSize()) {
-                drawKeyboard(keyboardLayout, fingerPosition)
+                drawKeyboard(keyboardLayout, transformedFingerPositions)
             }
         }
     }
@@ -517,71 +489,12 @@ fun CalibrationScreen(
 
 
 
-@Composable
-fun VirtualKeyboardScreen(
-    viewModel: VirtualKeyboardViewModel,
-    fingerPosition: android.graphics.PointF?,
-    onReset: () -> Unit
-) {
-    val keyboardLayout by viewModel.keyboardLayout.collectAsState()
-
-    Column(
-        modifier = Modifier.fillMaxSize()
-    ) {
-        // Virtual keyboard visualization
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f),
-            colors = CardDefaults.cardColors(containerColor = Color.White)
-        ) {
-            Box(modifier = Modifier.fillMaxSize()) {
-                // Draw keyboard layout
-                Canvas(modifier = Modifier.fillMaxSize()) {
-                    drawKeyboard(keyboardLayout, fingerPosition)
-                }
-            }
-        }
-
-        // Status information
-        Spacer(modifier = Modifier.height(16.dp))
-        Card(
-            colors = CardDefaults.cardColors(containerColor = Color.White)
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-            ) {
-                Text(
-                    text = "Status: Virtual Keyboard Active",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Green
-                )
-
-                fingerPosition?.let { pos ->
-                    Text(
-                        text = "Finger Position: (${pos.x.toInt()}, ${pos.y.toInt()})",
-                        fontSize = 14.sp,
-                        color = Color.Gray
-                    )
-                }
-
-                Text(
-                    text = "Point your finger at the keyboard area and tap down to type!",
-                    fontSize = 14.sp,
-                    color = Color.Gray,
-                    modifier = Modifier.padding(top = 8.dp)
-                )
-            }
-        }
-    }
-}
 
 private fun DrawScope.drawKeyboard(
     keyboardLayout: List<List<KeyboardKey>>,
-    fingerPosition: android.graphics.PointF?
+//    fingerPosition: android.graphics.PointF?
+    fingerPositions: Map<Int, android.graphics.PointF>
+
 ) {
     val canvasWidth = size.width
     val canvasHeight = size.height
@@ -613,20 +526,31 @@ private fun DrawScope.drawKeyboard(
         }
     }
 
-    // Draw finger position
-    fingerPosition?.let { pos ->
+    fingerPositions.forEach { (handIndex, pos) ->
         val x = pos.x * canvasWidth
         val y = pos.y * canvasHeight
 
+        val isInBounds = pos.x in 0f..1f && pos.y in 0f..1f
+        val color = if (handIndex == 0) Color.Red else Color.Blue  // Different colors per hand
+
+        Log.d("KeyboardDraw", "Hand $handIndex at canvas: ($x, $y), inBounds=$isInBounds")
+
         drawCircle(
-            color = Color.Red,
-            radius = 20f,
+            color = if (isInBounds) color else Color.Yellow,
+            radius = 25f,
             center = Offset(x, y)
         )
 
         drawCircle(
             color = Color.White,
-            radius = 15f,
+            radius = 18f,
+            center = Offset(x, y)
+        )
+
+        // Draw hand index number
+        drawCircle(
+            color = Color.Black,
+            radius = 10f,
             center = Offset(x, y)
         )
     }

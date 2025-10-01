@@ -46,23 +46,23 @@ class VirtualKeyboardViewModel : ViewModel() {
     private val _calibrationState = MutableStateFlow<CalibrationState>(CalibrationState.NotStarted)
     val calibrationState: StateFlow<CalibrationState> = _calibrationState.asStateFlow()
 
-    private val _calibrationPoints = MutableStateFlow(
-        listOf(
-            CalibrationPoint(100f, 100f),   // Top-left
-            CalibrationPoint(500f, 100f),   // Top-right
-            CalibrationPoint(500f, 400f),   // Bottom-right
-            CalibrationPoint(100f, 400f)    // Bottom-left
-        )
+private val _calibrationPoints = MutableStateFlow(
+    listOf(
+        CalibrationPoint(100f, 50f),    // Top-left
+        CalibrationPoint(900f, 50f),    // Top-right
+        CalibrationPoint(900f, 400f),   // Bottom-right
+        CalibrationPoint(100f, 400f)    // Bottom-left
     )
+)
     val calibrationPoints: StateFlow<List<CalibrationPoint>> = _calibrationPoints.asStateFlow()
 
     // Finger tracking state
     private val _fingerPosition = MutableStateFlow<FingerPosition?>(null)
     val fingerPosition: StateFlow<FingerPosition?> = _fingerPosition.asStateFlow()
 
-    private val _transformedFingerPosition = MutableStateFlow<PointF?>(null)
-    val transformedFingerPosition: StateFlow<PointF?> = _transformedFingerPosition.asStateFlow()
-
+    // ADD multi-finger transformed positions
+    private val _transformedFingerPositions = MutableStateFlow<Map<Int, PointF>>(emptyMap())
+    val transformedFingerPositions: StateFlow<Map<Int, PointF>> = _transformedFingerPositions.asStateFlow()
     // Tap detection
     private val _tapEvent = MutableSharedFlow<KeyboardKey?>()
     val tapEvent: SharedFlow<KeyboardKey?> = _tapEvent.asSharedFlow()
@@ -121,75 +121,95 @@ class VirtualKeyboardViewModel : ViewModel() {
         _isCameraReady.value = ready
     }
 
-    fun updateFingerPosition(x: Float, y: Float, z: Float, timestamp: Long) {
-        Log.d("ViewModel", "Finger update: x=$x, y=$y, z=$z")
+    // Add to class properties
+    private val _fingerPositions = MutableStateFlow<Map<Int, FingerPosition>>(emptyMap())
+    val fingerPositions: StateFlow<Map<Int, FingerPosition>> = _fingerPositions.asStateFlow()
+
+    private val lastFingerPositions = mutableMapOf<Int, FingerPosition>()
+    private val tapStates = mutableMapOf<Int, TapDetectionState>()
+    private val lastTapTimes = mutableMapOf<Int, Long>()
+
+
+    fun updateFingerPosition(x: Float, y: Float, z: Float, timestamp: Long, handIndex: Int) {
+        Log.d("FingerTracking", "Hand $handIndex update: x=$x, y=$y, z=$z")
         val newPosition = FingerPosition(x, y, z, timestamp)
-        _fingerPosition.value = newPosition
-        println("Finger position updated")
 
-        // Apply homography transformation (simulated for demo)
+        val currentFingers = _fingerPositions.value.toMutableMap()
+        currentFingers[handIndex] = newPosition
+        _fingerPositions.value = currentFingers
+
+        Log.d("FingerTracking", "Total hands tracked: ${currentFingers.size}")
+
         homographyMatrix?.let { matrix ->
-            Log.d("ViewModel", "Homography EXISTS, processing tap")
             val transformed = applySimulatedHomography(x, y, matrix)
-            _transformedFingerPosition.value = transformed
-            println("Transformed position: x=${transformed.x}, y=${transformed.y}")
+            // Store per-hand transformed position
+            val currentTransformed = _transformedFingerPositions.value.toMutableMap()
+            currentTransformed[handIndex] = transformed
+            _transformedFingerPositions.value = currentTransformed
+            Log.d("FingerTracking", "Hand $handIndex transformed: (${transformed.x}, ${transformed.y})")
 
-            // Process tap detection
-            processTapDetection(newPosition)
-        }?: Log.d("ViewModel", "NO HOMOGRAPHY - skipping tap detection")
+            // Initialize tap state for new finger
+            if (!tapStates.containsKey(handIndex)) {
+                tapStates[handIndex] = TapDetectionState.Idle
+                lastTapTimes[handIndex] = 0L
+            }
 
-        lastFingerPosition = newPosition
+            processTapDetection(newPosition, handIndex)
+        }
+
+        lastFingerPositions[handIndex] = newPosition
     }
 
-    private fun processTapDetection(currentPosition: FingerPosition) {
-        println("=== Tap Detection ===")
-        Log.d("tap detection","=== Tap Detection ===")
-        val lastPos = lastFingerPosition ?: run {
-            println("No last position available")
-            return
-        }
-        val currentTime = currentPosition.timestamp
-        val timeDelta = (currentPosition.timestamp - lastPos.timestamp) / 1_000_000_000.0 // ns to seconds
+private fun processTapDetection(currentPosition: FingerPosition, handIndex: Int) {
+    Log.d("TapDetection", "Hand $handIndex - Processing tap detection")
 
-        if (timeDelta <= 0 || timeDelta > 1.0) { // Sanity check
-            Log.d("ViewModel", "Invalid time delta: $timeDelta")
-            return
-        }
+    val lastPos = lastFingerPositions[handIndex] ?: run {
+        Log.d("TapDetection", "Hand $handIndex - No previous position")
+        return
+    }
 
-        val velocityZ = (currentPosition.z - lastPos.z) / timeDelta.toFloat()
-        println("Z velocity: $velocityZ, threshold: $pressVelocityThreshold")
-        println("Current tap state: $tapDetectionState")
+    val currentState = tapStates[handIndex] ?: TapDetectionState.Idle
+    val lastTap = lastTapTimes[handIndex] ?: 0L
 
-        when (tapDetectionState) {
-            TapDetectionState.Idle -> {
-                // Detect forward press (Z increasing, becoming less negative)
-                if (velocityZ > pressVelocityThreshold &&
-                    currentTime - lastTapTime > tapCooldown * 1_000_000) { // Convert ms to ns
-                    Log.d("ViewModel", "*** PRESSING STATE ENTERED ***")
-                    tapDetectionState = TapDetectionState.Pressing
-                }
+    val timeDelta = (currentPosition.timestamp - lastPos.timestamp) / 1_000_000_000.0
+    if (timeDelta <= 0 || timeDelta > 1.0) return
+
+    val velocityZ = (currentPosition.z - lastPos.z) / timeDelta.toFloat()
+
+    when (currentState) {
+        TapDetectionState.Idle -> {
+            if (velocityZ > pressVelocityThreshold &&
+                currentPosition.timestamp - lastTap > tapCooldown * 1_000_000) {
+                tapStates[handIndex] = TapDetectionState.Pressing
             }
-            TapDetectionState.Pressing -> {
-                // Detect retraction (Z decreasing, becoming more negative)
-                if (velocityZ < -pressVelocityThreshold) {
-                    Log.d("ViewModel", "*** TAP DETECTED! ***")
-                    registerTap(currentPosition)
-                    tapDetectionState = TapDetectionState.Idle
-                    lastTapTime = currentTime
-                }
+        }
+        TapDetectionState.Pressing -> {
+            if (velocityZ < -pressVelocityThreshold) {
+                registerTap(currentPosition,handIndex)
+                tapStates[handIndex] = TapDetectionState.Idle
+                lastTapTimes[handIndex] = currentPosition.timestamp
             }
         }
     }
+    Log.d("TapDetection", "Hand $handIndex - velocityZ=$velocityZ, state=${tapStates[handIndex]}")
 
-    private fun registerTap(position: FingerPosition) {
-        println("=== Register Tap ===")
-        val transformedPos = _transformedFingerPosition.value ?: run {
-            println("No transformed position available")
+}
+
+    private fun registerTap(position: FingerPosition, handIndex: Int) {
+        Log.d("RegisterTap", "Tap registered at raw position: (${position.x}, ${position.y})")
+        val transformedPos = _transformedFingerPositions.value[handIndex] ?: run {
+            Log.d("RegisterTap", "Hand $handIndex - No transformed position")
             return
         }
-        println("Looking for key at position: x=${transformedPos.x}, y=${transformedPos.y}")
+        // Add boundary check - only accept taps in normalized 0-1 range
+        if (transformedPos.x < 0f || transformedPos.x > 1f ||
+            transformedPos.y < 0f || transformedPos.y > 1f) {
+            Log.d("RegisterTap", "Tap OUTSIDE calibrated area: (${transformedPos.x}, ${transformedPos.y})")
+            return
+        }
+        Log.d("RegisterTap", "Hand $handIndex INSIDE area: (${transformedPos.x}, ${transformedPos.y})")
         val tappedKey = findKeyAtPosition(transformedPos)
-        println("Key found: ${tappedKey?.char ?: "NONE"}")
+        Log.d("RegisterTap", "Hand $handIndex found key: ${tappedKey?.char}")
 
         viewModelScope.launch {
             _tapEvent.emit(tappedKey)
@@ -228,25 +248,35 @@ class VirtualKeyboardViewModel : ViewModel() {
     }
 
     private fun calculateSimulatedHomography(points: List<CalibrationPoint>): FloatArray {
-        // This is a simplified simulation. In real implementation, use OpenCV's getPerspectiveTransform
-        // For demo purposes, we'll create a simple transformation
-        return floatArrayOf(
-            1.0f, 0.0f, points[0].x,
-            0.0f, 1.0f, points[0].y,
-            0.0f, 0.0f, 1.0f
-        )
+        // Store the calibration rectangle bounds for mapping
+        val minX = points.minOf { it.x }
+        val maxX = points.maxOf { it.x }
+        val minY = points.minOf { it.y }
+        val maxY = points.maxOf { it.y }
+
+        val width = maxX - minX
+        val height = maxY - minY
+
+        Log.d("VirtualKeyboard", "ViewModel: Calibration bounds - x:$minX-$maxX, y:$minY-$maxY, size:${width}x$height")
+
+        // Store as: [minX, minY, width, height]
+        return floatArrayOf(minX, minY, width, height)
     }
 
     private fun applySimulatedHomography(x: Float, y: Float, matrix: FloatArray): PointF {
-        // Simplified transformation for demo
-        // In real implementation, use OpenCV's perspectiveTransform
-        val normalizedX = (x - matrix[2]) / 1000f // Normalize to 0-1 range
-        val normalizedY = (y - matrix[5]) / 600f  // Normalize to 0-1 range
+        // Matrix format: [minX, minY, width, height]
+        val minX = matrix[0]
+        val minY = matrix[1]
+        val width = matrix[2]
+        val height = matrix[3]
 
-        return PointF(
-            normalizedX.coerceIn(0f, 1f),
-            normalizedY.coerceIn(0f, 1f)
-        )
+        // Map camera coordinates to normalized 0-1 range within calibration area
+        val normalizedX = ((x - minX) / width).coerceIn(0f, 1f)
+        val normalizedY = ((y - minY) / height).coerceIn(0f, 1f)
+
+        Log.d("VirtualKeyboard", "ViewModel: Homography transform - input($x,$y) -> normalized($normalizedX,$normalizedY)")
+
+        return PointF(normalizedX, normalizedY)
     }
 
     private fun createQwertyLayout(): List<List<KeyboardKey>> {

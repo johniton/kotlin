@@ -1,13 +1,9 @@
 package com.example.virtualkeyboard.vision
 
 import android.content.Context
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.ImageFormat
-import android.graphics.ImageFormat.*
-import android.graphics.Rect
-import android.graphics.YuvImage
 import android.util.Log
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
 import com.google.mediapipe.framework.image.MPImage
 import com.google.mediapipe.tasks.core.BaseOptions
 import com.google.mediapipe.tasks.vision.core.RunningMode
@@ -16,138 +12,119 @@ import com.google.mediapipe.tasks.vision.handlandmarker.HandLandmarkerResult
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-
-// Camera analyzer for CameraX integration
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import com.example.virtualkeyboard.viewmodel.VirtualKeyboardViewModel
 import com.google.mediapipe.framework.image.BitmapImageBuilder
 
+private const val TAG = "VirtualKeyboard"
 
 class MediaPipeHandTracker(
     private val context: Context,
-    private val onHandLandmarks: (x: Float, y: Float, z: Float, timestamp: Long) -> Unit,
+    private val onHandLandmarks: (x: Float, y: Float, z: Float, timestamp: Long, handIndex: Int) -> Unit,
     private val onError: (String) -> Unit
 ) {
     private var handLandmarker: HandLandmarker? = null
     private val coroutineScope = CoroutineScope(Dispatchers.Default)
+    private var isInitialized = false
 
     fun initialize() {
-
         try {
-            Log.d("HandTracker", "Initializing MediaPipe hand tracker...")
+            Log.d(TAG, "MediaPipe: Starting initialization")
+
             val baseOptions = BaseOptions.builder()
-                .setModelAssetPath("hand_landmarker.task") // You'll need to add this to assets
+                .setModelAssetPath("hand_landmarker.task")
                 .build()
+            Log.d(TAG, "MediaPipe: BaseOptions created")
 
             val options = HandLandmarker.HandLandmarkerOptions.builder()
                 .setBaseOptions(baseOptions)
                 .setRunningMode(RunningMode.LIVE_STREAM)
-                .setNumHands(1)
-                .setMinHandDetectionConfidence(0.5f)
-                .setMinTrackingConfidence(0.5f)
-                .setMinHandPresenceConfidence(0.5f)
+                .setNumHands(2)
+                .setMinHandDetectionConfidence(0.3f)  // Lower from 0.5f
+                .setMinTrackingConfidence(0.3f)        // Lower from 0.5f
+                .setMinHandPresenceConfidence(0.3f)    // Lower from 0.5f
                 .setResultListener(::onHandLandmarkerResult)
                 .setErrorListener(::onHandLandmarkerError)
                 .build()
+            Log.d(TAG, "MediaPipe: Options configured")
 
             handLandmarker = HandLandmarker.createFromOptions(context, options)
-            Log.d("HandTracker", "MediaPipe initialized successfully")
+            isInitialized = true
+            Log.d(TAG, "MediaPipe: Initialization SUCCESS")
         } catch (e: Exception) {
+            Log.e(TAG, "MediaPipe: Initialization FAILED", e)
             onError("Failed to initialize MediaPipe: ${e.message}")
         }
     }
 
     fun detectAsync(mpImage: MPImage, timestamp: Long) {
-        handLandmarker?.detectAsync(mpImage, timestamp)
+        try {
+            if (!isInitialized) {
+                Log.w(TAG, "MediaPipe: detectAsync called but not initialized")
+                return
+            }
+            handLandmarker?.detectAsync(mpImage, timestamp)
+        } catch (e: Exception) {
+            Log.e(TAG, "MediaPipe: detectAsync failed", e)
+        }
     }
+
     private fun onHandLandmarkerResult(
         result: HandLandmarkerResult,
         input: MPImage
     ) {
-        coroutineScope.launch {
-            if (result.landmarks().isNotEmpty()) {
-                val landmarks = result.landmarks()[0]
+        try {
+            Log.v(TAG, "MediaPipe: Result callback - ${result.landmarks().size} hands detected")
 
-                if (landmarks.size > 8) {
-                    val indexFingerTip = landmarks[8]
 
-                    val imageWidth = input.width
-                    val imageHeight = input.height
+            if (result.landmarks().isEmpty()) {
+                Log.d(TAG, "MediaPipe: NO hands detected in frame")
+            }
 
-                    val pixelX = indexFingerTip.x() * imageWidth
-                    val pixelY = indexFingerTip.y() * imageHeight
-                    val depthZ = indexFingerTip.z()
+            coroutineScope.launch {
+                try {
+                    if (result.landmarks().isNotEmpty()) {
+                        result.landmarks().forEachIndexed { handIndex, landmarks ->
+                            Log.d(TAG, "MediaPipe: Processing hand $handIndex with ${landmarks.size} landmarks")
+                            if (landmarks.size > 8) {
+                                val indexFingerTip = landmarks[8]
 
-                    // THIS IS CRITICAL - actually call the callback
-                    onHandLandmarks(pixelX, pixelY, depthZ, System.nanoTime())
+                                val imageWidth = input.width
+                                val imageHeight = input.height
+
+                                val pixelX = indexFingerTip.x() * imageWidth
+                                val pixelY = indexFingerTip.y() * imageHeight
+                                val depthZ = indexFingerTip.z()
+
+                                Log.v(TAG, "MediaPipe: Hand $handIndex - x=$pixelX, y=$pixelY, z=$depthZ")
+                                onHandLandmarks(pixelX, pixelY, depthZ, System.nanoTime(), handIndex)
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "MediaPipe: Error in result processing coroutine", e)
                 }
             }
+        } catch (e: Exception) {
+            Log.e(TAG, "MediaPipe: Error in onHandLandmarkerResult", e)
         }
     }
-//    private fun onHandLandmarkerResult(
-//        result: HandLandmarkerResult,
-//        input: MPImage
-//    ) {
-//        Log.d("HandTracker", "=== MediaPipe Result ===")
-//        Log.d("HandTracker", "Hands detected: ${result.landmarks().size}")
-//        println("=== MediaPipe Result ===")
-//        println("Hands detected: ${result.landmarks().size}")
-////        coroutineScope.launch {
-////            if (result.landmarks().isNotEmpty()) {
-////                val landmarks = result.landmarks()[0]
-////                println("Landmarks count: ${landmarks.size}")
-////
-////                // Get index finger tip (landmark #8)
-////                if (landmarks.size > 8) {
-////                    val indexFingerTip = landmarks[8]
-////
-////                    // MediaPipe provides normalized coordinates (0.0 to 1.0)
-////                    // Convert to pixel coordinates
-////                    val imageWidth = input.width
-////                    val imageHeight = input.height
-////
-////                    val pixelX = indexFingerTip.x() * imageWidth
-////                    val pixelY = indexFingerTip.y() * imageHeight
-////                    val depthZ = indexFingerTip.z() // Relative depth from wrist
-////
-////                    println("Raw finger position: x=$pixelX, y=$pixelY, z=$depthZ")
-////                    onHandLandmarks(pixelX, pixelY, depthZ, System.nanoTime())
-////                }
-////            }
-////        }
-//        coroutineScope.launch {
-//            if (result.landmarks().isNotEmpty()) {
-//                val landmarks = result.landmarks()[0]
-//                Log.d("HandTracker", "Landmarks count: ${landmarks.size}")
-//
-//                // Debug: print index fingertip coordinates
-//                if (landmarks.size > 8) {
-//                    val indexFingerTip = landmarks[8]
-//
-//                    val imageWidth = input.width
-//                    val imageHeight = input.height
-//
-//                    val pixelX = indexFingerTip.x() * imageWidth
-//                    val pixelY = indexFingerTip.y() * imageHeight
-//                    val depthZ = indexFingerTip.z()
-//
-//                    Log.d("HandTracker", "Fingertip coords: x=$pixelX, y=$pixelY, z=$depthZ")
-//
-//                    println("=== Fingertip coords: x=$pixelX, y=$pixelY, z=$depthZ")
-//                }
-//            } else {
-//                Log.d("HandTracker", "No hand detected in this frame")
-//            }
-//        }
-//    }
 
     private fun onHandLandmarkerError(error: RuntimeException) {
+        Log.e(TAG, "MediaPipe: Landmarker error", error)
         onError("MediaPipe Error: ${error.message}")
     }
 
     fun close() {
-        handLandmarker?.close()
+        try {
+            Log.d(TAG, "MediaPipe: Closing")
+            handLandmarker?.close()
+            isInitialized = false
+            Log.d(TAG, "MediaPipe: Closed successfully")
+        } catch (e: Exception) {
+            Log.e(TAG, "MediaPipe: Error during close", e)
+        }
     }
 }
 
@@ -156,94 +133,140 @@ class HandAnalyzer(
     private val handTracker: MediaPipeHandTracker
 ) : ImageAnalysis.Analyzer {
 
-override fun analyze(imageProxy: ImageProxy) {
-    Log.d("HandTracker", "Analyzer called, format=${imageProxy.format}")
-    val bitmap = imageProxy.toBitmap() // <-- built-in extension
-    val mpImage = BitmapImageBuilder(bitmap).build()
-//    handTracker.detectAsync(mpImage, imageProxy.imageInfo.timestamp)
-    handTracker.detectAsync(mpImage, imageProxy.imageInfo.timestamp)
-    imageProxy.close()
-}
+    private var frameCount = 0
 
+    override fun analyze(imageProxy: ImageProxy) {
+        try {
+            frameCount++
+            if (frameCount % 30 == 0) {
+                Log.v(TAG, "HandAnalyzer: Processing frame $frameCount")
+            }
 
-    private fun yuvToRgb(imageProxy: ImageProxy): Bitmap {
-        val yBuffer = imageProxy.planes[0].buffer
-        val uBuffer = imageProxy.planes[1].buffer
-        val vBuffer = imageProxy.planes[2].buffer
-
-        val ySize = yBuffer.remaining()
-        val uSize = uBuffer.remaining()
-        val vSize = vBuffer.remaining()
-
-        val nv21 = ByteArray(ySize + uSize + vSize)
-        yBuffer.get(nv21, 0, ySize)
-        vBuffer.get(nv21, ySize, vSize)
-        uBuffer.get(nv21, ySize + vSize, uSize)
-
-        val yuvImage = YuvImage(nv21, NV21, imageProxy.width, imageProxy.height, null)
-        val out = java.io.ByteArrayOutputStream()
-        yuvImage.compressToJpeg(Rect(0, 0, imageProxy.width, imageProxy.height), 100, out)
-        val imageBytes = out.toByteArray()
-
-        return BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
-    }
-
-    private fun imageProxyToBitmap(imageProxy: ImageProxy): android.graphics.Bitmap {
-        val buffer = imageProxy.planes[0].buffer
-        val bytes = ByteArray(buffer.remaining())
-        buffer.get(bytes)
-
-        // Convert YUV_420_888 to RGB bitmap
-        // This is a simplified conversion - in production, use more robust conversion
-        return android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-            ?: createDummyBitmap()
-    }
-
-    private fun createDummyBitmap(): android.graphics.Bitmap {
-        // Fallback bitmap in case conversion fails
-//        return android.graphics.Bitmap.createBitmap(640, 480, android.graphics.Bitmap.Config.RGB_565)
-        return android.graphics.Bitmap.createBitmap(640, 480, android.graphics.Bitmap.Config.ARGB_8888)
+            val bitmap = imageProxy.toBitmap()
+            val mpImage = BitmapImageBuilder(bitmap).build()
+            handTracker.detectAsync(mpImage, imageProxy.imageInfo.timestamp)
+            imageProxy.close()
+        } catch (e: Exception) {
+            Log.e(TAG, "HandAnalyzer: Error in analyze", e)
+            imageProxy.close()
+        }
     }
 }
 
-// Camera manager class
+
 class CameraManager(
     private val context: Context,
     private val lifecycleOwner: androidx.lifecycle.LifecycleOwner,
-//    private val viewModel: com.demo.virtualkeyboard.viewmodel.VirtualKeyboardViewModel
     private val viewModel: VirtualKeyboardViewModel
-) {
+) : DefaultLifecycleObserver {
+
     private var cameraProvider: androidx.camera.lifecycle.ProcessCameraProvider? = null
     private var handTracker: MediaPipeHandTracker? = null
+    private var previewView: androidx.camera.view.PreviewView? = null
+    private var onCameraReadyCallback: (() -> Unit)? = null
+    private var onErrorCallback: ((String) -> Unit)? = null
+    private var isBound = false
+
+    init {
+        Log.d(TAG, "CameraManager: Constructor called")
+        lifecycleOwner.lifecycle.addObserver(this)
+    }
+
+    override fun onCreate(owner: LifecycleOwner) {
+        Log.d(TAG, "CameraManager: onCreate")
+    }
+
+    override fun onStart(owner: LifecycleOwner) {
+        Log.d(TAG, "CameraManager: onStart")
+    }
+
+    override fun onResume(owner: LifecycleOwner) {
+        super.onResume(owner)
+        Log.d(TAG, "CameraManager: onResume - isBound=$isBound")
+
+        if (!isBound && previewView != null && cameraProvider != null) {
+            Log.d(TAG, "CameraManager: Rebinding camera on resume")
+            previewView?.let { preview ->
+                bindCamera(preview, onCameraReadyCallback ?: {}, onErrorCallback ?: {})
+            }
+        }
+    }
+
+    override fun onPause(owner: LifecycleOwner) {
+        super.onPause(owner)
+        Log.d(TAG, "CameraManager: onPause - unbinding camera")
+        try {
+            cameraProvider?.unbindAll()
+            isBound = false
+            Log.d(TAG, "CameraManager: Camera unbound successfully")
+        } catch (e: Exception) {
+            Log.e(TAG, "CameraManager: Error unbinding camera", e)
+        }
+    }
+
+    override fun onStop(owner: LifecycleOwner) {
+        Log.d(TAG, "CameraManager: onStop")
+    }
+
+    override fun onDestroy(owner: LifecycleOwner) {
+        Log.d(TAG, "CameraManager: onDestroy")
+    }
 
     fun setupCamera(
         previewView: androidx.camera.view.PreviewView,
         onCameraReady: () -> Unit,
         onError: (String) -> Unit
     ) {
-        // Initialize MediaPipe hand tracker
-        handTracker = MediaPipeHandTracker(
-            context = context,
-            onHandLandmarks = { x, y, z, timestamp ->
-                viewModel.updateFingerPosition(x, y, z, timestamp)
-            },
-            onError = onError
-        )
-//        handTracker?.initialize()
+        Log.d(TAG, "CameraManager: setupCamera called")
 
-        Thread {
-            handTracker?.initialize()
-        }.start()
+        try {
+            this.previewView = previewView
+            this.onCameraReadyCallback = onCameraReady
+            this.onErrorCallback = onError
 
-        val cameraProviderFuture = androidx.camera.lifecycle.ProcessCameraProvider.getInstance(context)
-        cameraProviderFuture.addListener({
-            try {
-                cameraProvider = cameraProviderFuture.get()
-                bindCamera(previewView, onCameraReady, onError)
-            } catch (e: Exception) {
-                onError("Camera initialization failed: ${e.message}")
-            }
-        }, androidx.core.content.ContextCompat.getMainExecutor(context))
+            Log.d(TAG, "CameraManager: Creating MediaPipe tracker")
+            handTracker = MediaPipeHandTracker(
+                context = context,
+                onHandLandmarks = { x, y, z, timestamp, handIndex ->
+                    try {
+                        viewModel.updateFingerPosition(x, y, z, timestamp, handIndex)
+                    } catch (e: Exception) {
+                        Log.e(TAG, "CameraManager: Error in hand landmark callback", e)
+                    }
+                },
+                onError = { error ->
+                    Log.e(TAG, "CameraManager: MediaPipe error - $error")
+                    onError(error)
+                }
+            )
+
+            Log.d(TAG, "CameraManager: Starting MediaPipe initialization thread")
+            Thread {
+                try {
+                    handTracker?.initialize()
+                    Log.d(TAG, "CameraManager: MediaPipe initialization thread completed")
+                } catch (e: Exception) {
+                    Log.e(TAG, "CameraManager: MediaPipe initialization thread failed", e)
+                }
+            }.start()
+
+            Log.d(TAG, "CameraManager: Getting CameraProvider")
+            val cameraProviderFuture = androidx.camera.lifecycle.ProcessCameraProvider.getInstance(context)
+            cameraProviderFuture.addListener({
+                try {
+                    Log.d(TAG, "CameraManager: CameraProvider future callback")
+                    cameraProvider = cameraProviderFuture.get()
+                    Log.d(TAG, "CameraManager: CameraProvider obtained, binding camera")
+                    bindCamera(previewView, onCameraReady, onError)
+                } catch (e: Exception) {
+                    Log.e(TAG, "CameraManager: Failed to get camera provider", e)
+                    onError("Camera initialization failed: ${e.message}")
+                }
+            }, androidx.core.content.ContextCompat.getMainExecutor(context))
+        } catch (e: Exception) {
+            Log.e(TAG, "CameraManager: setupCamera failed", e)
+            onError("Setup failed: ${e.message}")
+        }
     }
 
     private fun bindCamera(
@@ -252,34 +275,40 @@ class CameraManager(
         onError: (String) -> Unit
     ) {
         try {
-            val cameraProvider = this.cameraProvider ?: return
+            Log.d(TAG, "CameraManager: bindCamera started")
+            val cameraProvider = this.cameraProvider ?: run {
+                Log.e(TAG, "CameraManager: bindCamera - cameraProvider is null")
+                return
+            }
 
-            // Preview use case
+            Log.d(TAG, "CameraManager: Creating preview use case")
             val preview = androidx.camera.core.Preview.Builder()
                 .build()
                 .also {
                     it.setSurfaceProvider(previewView.surfaceProvider)
                 }
 
-            // Image analysis use case
+            Log.d(TAG, "CameraManager: Creating image analyzer")
             val imageAnalyzer = androidx.camera.core.ImageAnalysis.Builder()
                 .setBackpressureStrategy(androidx.camera.core.ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                 .build()
                 .also {
                     handTracker?.let { tracker ->
+                        Log.d(TAG, "CameraManager: Setting analyzer")
                         it.setAnalyzer(
                             androidx.core.content.ContextCompat.getMainExecutor(context),
                             HandAnalyzer(tracker)
                         )
-                    }
+                    } ?: Log.e(TAG, "CameraManager: handTracker is null, cannot set analyzer")
                 }
 
-            // Select camera (front camera preferred for this use case)
             val cameraSelector = androidx.camera.core.CameraSelector.DEFAULT_FRONT_CAMERA
+            Log.d(TAG, "CameraManager: Camera selector: FRONT")
 
-
-            // Bind use cases to lifecycle
+            Log.d(TAG, "CameraManager: Unbinding all")
             cameraProvider.unbindAll()
+
+            Log.d(TAG, "CameraManager: Binding to lifecycle")
             cameraProvider.bindToLifecycle(
                 lifecycleOwner,
                 cameraSelector,
@@ -287,17 +316,40 @@ class CameraManager(
                 imageAnalyzer
             )
 
+            isBound = true
+            Log.d(TAG, "CameraManager: Camera bound successfully")
+
             onCameraReady()
             viewModel.setCameraReady(true)
+            Log.d(TAG, "CameraManager: bindCamera completed successfully")
 
         } catch (e: Exception) {
+            Log.e(TAG, "CameraManager: bindCamera failed", e)
+            isBound = false
             onError("Failed to bind camera: ${e.message}")
         }
     }
 
     fun shutdown() {
-        handTracker?.close()
-        cameraProvider?.unbindAll()
+        Log.d(TAG, "CameraManager: shutdown called")
+        try {
+            lifecycleOwner.lifecycle.removeObserver(this)
+            Log.d(TAG, "CameraManager: Lifecycle observer removed")
+
+            handTracker?.close()
+            Log.d(TAG, "CameraManager: HandTracker closed")
+
+            cameraProvider?.unbindAll()
+            Log.d(TAG, "CameraManager: Camera unbound")
+
+            previewView = null
+            onCameraReadyCallback = null
+            onErrorCallback = null
+            isBound = false
+
+            Log.d(TAG, "CameraManager: shutdown completed")
+        } catch (e: Exception) {
+            Log.e(TAG, "CameraManager: Error during shutdown", e)
+        }
     }
 }
-
