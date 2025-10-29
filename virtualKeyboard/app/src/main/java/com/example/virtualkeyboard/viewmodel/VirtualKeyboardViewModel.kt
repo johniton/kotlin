@@ -46,12 +46,16 @@ class VirtualKeyboardViewModel : ViewModel() {
     private val _calibrationState = MutableStateFlow<CalibrationState>(CalibrationState.NotStarted)
     val calibrationState: StateFlow<CalibrationState> = _calibrationState.asStateFlow()
 
+    private var deskZPlane: Float? = null
+    // Using a list with placeholder values for Z coordinates
+    private val calibrationZValues = mutableListOf(Float.MIN_VALUE, Float.MIN_VALUE, Float.MIN_VALUE, Float.MIN_VALUE)
+
 private val _calibrationPoints = MutableStateFlow(
     listOf(
-        CalibrationPoint(100f, 50f),    // Top-left
-        CalibrationPoint(900f, 50f),    // Top-right
-        CalibrationPoint(900f, 400f),   // Bottom-right
-        CalibrationPoint(100f, 400f)    // Bottom-left
+        CalibrationPoint(0f, 0f), // Default, isSet = false
+        CalibrationPoint(0f, 0f), // Default, isSet = false
+        CalibrationPoint(0f, 0f), // Default, isSet = false
+        CalibrationPoint(0f, 0f)  // Default, isSet = false
     )
 )
     val calibrationPoints: StateFlow<List<CalibrationPoint>> = _calibrationPoints.asStateFlow()
@@ -91,31 +95,50 @@ private val _calibrationPoints = MutableStateFlow(
 
     fun startCalibration() {
         _calibrationState.value = CalibrationState.InProgress
+        calibrationZValues.fill(Float.MIN_VALUE) // Reset Z values to placeholders
+        Log.d("ViewModel", "Calibration started. Z values reset: $calibrationZValues")
     }
 
-    fun updateCalibrationPoint(index: Int, x: Float, y: Float) {
+    // Modify updateCalibrationPoint to capture Z values into the list
+    fun updateCalibrationPoint(index: Int, x: Float, y: Float, z: Float = 0f) {
         val currentPoints = _calibrationPoints.value.toMutableList()
         if (index in 0..3) {
-            currentPoints[index] = CalibrationPoint(x, y, true) // Mark as set!
+            currentPoints[index] = CalibrationPoint(x, y, true)
             _calibrationPoints.value = currentPoints
-            println("Updated calibration point $index to ($x, $y)")
 
-            // Auto-complete calibration when all points are set
+            // Store Z value in the list at the specified index
+            calibrationZValues[index] = z
+            Log.d("ViewModel", "Calibration point $index: ($x, $y, z=$z), updated calibrationZValues: $calibrationZValues")
+
             if (currentPoints.all { it.isSet }) {
-                Log.d("ViewModel", "Auto-completing calibration")
                 completeCalibration()
             }
         }
     }
+
+    // Modify completeCalibration to use the list and check for placeholders
     fun completeCalibration() {
+        Log.d("ViewModel", "completeCalibration called.")
         val points = _calibrationPoints.value
         if (points.all { it.isSet }) {
-            // In real implementation, calculate homography matrix here using OpenCV
+            Log.d("ViewModel", "All calibration points are set. Proceeding with homography and Z-plane.")
             homographyMatrix = calculateSimulatedHomography(points)
-            Log.d("ViewModel", "Calibration complete, matrix: ${homographyMatrix?.contentToString()}") // ADD THIS
+
+            // Calculate average desk Z-plane if all Z values have been updated
+            if (!calibrationZValues.any { it == Float.MIN_VALUE }) {
+                deskZPlane = calibrationZValues.average().toFloat()
+                Log.d("ViewModel", "Desk Z-plane set to: $deskZPlane from values: $calibrationZValues")
+            } else {
+                deskZPlane = null // Ensure it's null if not all Z values were set
+                Log.w("ViewModel", "Cannot set desk Z-plane: One or more Z values were not updated from initial. Values: $calibrationZValues")
+            }
+
             _calibrationState.value = CalibrationState.Completed
+        } else {
+            Log.w("ViewModel", "completeCalibration: Not all points are set. Points: $points")
         }
     }
+
 
     fun setCameraReady(ready: Boolean) {
         _isCameraReady.value = ready
@@ -160,39 +183,48 @@ private val _calibrationPoints = MutableStateFlow(
         lastFingerPositions[handIndex] = newPosition
     }
 
+// Replace processTapDetection function in VirtualKeyboardViewModel.kt
 private fun processTapDetection(currentPosition: FingerPosition, handIndex: Int) {
-    Log.d("TapDetection", "Hand $handIndex - Processing tap detection")
+    val lastPos = lastFingerPositions[handIndex] ?: return
+    Log.d("TapDebug", "Hand $handIndex: processTapDetection called. currentZ=${currentPosition.z}, lastZ=${lastPos.z}, timestampDelta=${currentPosition.timestamp - lastPos.timestamp}")
 
-    val lastPos = lastFingerPositions[handIndex] ?: run {
-        Log.d("TapDetection", "Hand $handIndex - No previous position")
+    val timeDelta = (currentPosition.timestamp - lastPos.timestamp) / 1_000_000_000.0
+    if (timeDelta <= 0 || timeDelta > 0.1) { // Max 100ms between updates for velocity calc
+        Log.d("TapDebug", "Hand $handIndex: timeDelta out of range: $timeDelta")
         return
     }
+
+    val velocityZ = (currentPosition.z - lastPos.z) / timeDelta.toFloat()
 
     val currentState = tapStates[handIndex] ?: TapDetectionState.Idle
     val lastTap = lastTapTimes[handIndex] ?: 0L
 
-    val timeDelta = (currentPosition.timestamp - lastPos.timestamp) / 1_000_000_000.0
-    if (timeDelta <= 0 || timeDelta > 1.0) return
+    // Use desk plane if available
+    val nearDesk = deskZPlane?.let { plane ->
+        kotlin.math.abs(currentPosition.z - plane) < 0.03f  // Within 3cm
+    } ?: false
+    Log.d("TapDebug", "Hand $handIndex: nearDesk=$nearDesk (currentZ=${currentPosition.z}, deskZ=${deskZPlane ?: "null"})")
 
-    val velocityZ = (currentPosition.z - lastPos.z) / timeDelta.toFloat()
 
     when (currentState) {
         TapDetectionState.Idle -> {
-            if (velocityZ > pressVelocityThreshold &&
-                currentPosition.timestamp - lastTap > tapCooldown * 1_000_000) {
+            val cooldownPassed = currentPosition.timestamp - lastTap > tapCooldown * 1_000_000
+            Log.d("TapDebug", "Hand $handIndex: Idle state. nearDesk=$nearDesk, velocityZ=$velocityZ, cooldownPassed=$cooldownPassed (tapCooldown=${tapCooldown * 1_000_000}, lastTap=$lastTap, currentTS=${currentPosition.timestamp})")
+            if ((nearDesk || velocityZ > 0.02f) && cooldownPassed) {
+                Log.d("TapDebug", "Hand $handIndex: Idle -> Pressing")
                 tapStates[handIndex] = TapDetectionState.Pressing
             }
         }
         TapDetectionState.Pressing -> {
-            if (velocityZ < -pressVelocityThreshold) {
-                registerTap(currentPosition,handIndex)
+            Log.d("TapDebug", "Hand $handIndex: Pressing state. nearDesk=$nearDesk, velocityZ=$velocityZ")
+            if (nearDesk && velocityZ < -0.01f) {
+                 Log.d("TapDebug", "Hand $handIndex: Pressing -> Idle (TAP REGISTERED)")
+                registerTap(currentPosition, handIndex)
                 tapStates[handIndex] = TapDetectionState.Idle
                 lastTapTimes[handIndex] = currentPosition.timestamp
             }
         }
     }
-    Log.d("TapDetection", "Hand $handIndex - velocityZ=$velocityZ, state=${tapStates[handIndex]}")
-
 }
 
     private fun registerTap(position: FingerPosition, handIndex: Int) {
@@ -335,11 +367,14 @@ private fun processTapDetection(currentPosition: FingerPosition, handIndex: Int)
     fun resetCalibration() {
         _calibrationState.value = CalibrationState.NotStarted
         _calibrationPoints.value = listOf(
-            CalibrationPoint(0f, 0f),
-            CalibrationPoint(0f, 0f),
-            CalibrationPoint(0f, 0f),
-            CalibrationPoint(0f, 0f)
+            CalibrationPoint(0f, 0f), // Default, isSet = false
+            CalibrationPoint(0f, 0f), // Default, isSet = false
+            CalibrationPoint(0f, 0f), // Default, isSet = false
+            CalibrationPoint(0f, 0f)  // Default, isSet = false
         )
         homographyMatrix = null
+        calibrationZValues.fill(Float.MIN_VALUE) // Reset Z values to placeholders
+        deskZPlane = null
+        Log.d("ViewModel", "Calibration reset.")
     }
 }

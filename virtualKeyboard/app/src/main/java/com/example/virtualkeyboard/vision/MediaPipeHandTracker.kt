@@ -70,44 +70,32 @@ class MediaPipeHandTracker(
         }
     }
 
+    // In MediaPipeHandTracker.kt - update onHandLandmarkerResult callback
+
     private fun onHandLandmarkerResult(
         result: HandLandmarkerResult,
         input: MPImage
     ) {
         try {
-            Log.v(TAG, "MediaPipe: Result callback - ${result.landmarks().size} hands detected")
+            if (result.landmarks().isNotEmpty()) {
+                result.landmarks().forEachIndexed { handIndex, landmarks ->
+                    if (landmarks.size > 8) {
+                        val indexFingerTip = landmarks[8]
 
+                        val imageWidth = input.width
+                        val imageHeight = input.height
 
-            if (result.landmarks().isEmpty()) {
-                Log.d(TAG, "MediaPipe: NO hands detected in frame")
-            }
+                        val pixelX = indexFingerTip.x() * imageWidth
+                        val pixelY = indexFingerTip.y() * imageHeight
+                        val depthZ = indexFingerTip.z()
 
-            coroutineScope.launch {
-                try {
-                    if (result.landmarks().isNotEmpty()) {
-                        result.landmarks().forEachIndexed { handIndex, landmarks ->
-                            Log.d(TAG, "MediaPipe: Processing hand $handIndex with ${landmarks.size} landmarks")
-                            if (landmarks.size > 8) {
-                                val indexFingerTip = landmarks[8]
-
-                                val imageWidth = input.width
-                                val imageHeight = input.height
-
-                                val pixelX = indexFingerTip.x() * imageWidth
-                                val pixelY = indexFingerTip.y() * imageHeight
-                                val depthZ = indexFingerTip.z()
-
-                                Log.v(TAG, "MediaPipe: Hand $handIndex - x=$pixelX, y=$pixelY, z=$depthZ")
-                                onHandLandmarks(pixelX, pixelY, depthZ, System.nanoTime(), handIndex)
-                            }
-                        }
+                        // Pass actual Z coordinate from MediaPipe
+                        onHandLandmarks(pixelX, pixelY, depthZ, System.nanoTime(), handIndex)
                     }
-                } catch (e: Exception) {
-                    Log.e(TAG, "MediaPipe: Error in result processing coroutine", e)
                 }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "MediaPipe: Error in onHandLandmarkerResult", e)
+            Log.e(TAG, "MediaPipe: Error in result processing", e)
         }
     }
 
