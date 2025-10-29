@@ -34,11 +34,13 @@ import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.geometry.Size
+import com.example.virtualkeyboard.viewmodel.FingerPosition
 
 @SuppressLint("UnusedBoxWithConstraintsScope")
 @Composable
 fun CalibrationOverlay(
     calibrationPoints: List<CalibrationPoint>,
+    fingerPositions: Map<Int, FingerPosition> = emptyMap(),  // NEW
     onPointDrag: (Int, Float, Float) -> Unit,
     onCalibrationComplete: () -> Unit
 ) {
@@ -434,6 +436,8 @@ fun CalibrationStartScreen(
     }
 }
 
+// In VirtualKeyboardDemo.kt - update CalibrationScreen
+
 @Composable
 fun CalibrationScreen(
     viewModel: VirtualKeyboardViewModel,
@@ -444,20 +448,15 @@ fun CalibrationScreen(
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     val calibrationPoints by viewModel.calibrationPoints.collectAsState()
 
-    var previewView by remember { mutableStateOf<androidx.camera.view.PreviewView?>(null) }
+    // NEW: Track current finger positions during calibration
+    val fingerPositions by viewModel.fingerPositions.collectAsState()
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // Camera preview
         AndroidView(
             factory = { ctx ->
                 androidx.camera.view.PreviewView(ctx).also { preview ->
-                    previewView = preview
                     val cameraManager = CameraManager(ctx, lifecycleOwner, viewModel)
-                    cameraManager.setupCamera(
-                        preview,
-                        onCameraReady = {},
-                        onError = { /* Handle error */ }
-                    )
+                    cameraManager.setupCamera(preview, {}, {})
                     onCameraManagerCreated(cameraManager)
                 }
             },
@@ -467,16 +466,17 @@ fun CalibrationScreen(
         if (showCalibrationUI) {
             CalibrationOverlay(
                 calibrationPoints = calibrationPoints,
+                fingerPositions = fingerPositions,  // NEW: Pass finger positions
                 onPointDrag = { index, x, y ->
-                    viewModel.updateCalibrationPoint(index, x, y)
+                    // NEW: Get Z value from current finger position
+                    val z = fingerPositions.values.firstOrNull()?.z ?: 0f
+                    viewModel.updateCalibrationPoint(index, x, y, z)
                 },
                 onCalibrationComplete = {
                     viewModel.completeCalibration()
                 }
             )
         } else {
-            // Show keyboard overlay
-//            val fingerPosition by viewModel.transformedFingerPosition.collectAsState()
             val transformedFingerPositions by viewModel.transformedFingerPositions.collectAsState()
             val keyboardLayout by viewModel.keyboardLayout.collectAsState()
 
@@ -486,7 +486,6 @@ fun CalibrationScreen(
         }
     }
 }
-
 
 
 
