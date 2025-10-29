@@ -79,8 +79,8 @@ private val _calibrationPoints = MutableStateFlow(
     private var tapDetectionState: TapDetectionState = TapDetectionState.Idle
     private var lastFingerPosition: FingerPosition? = null
     private var lastTapTime = 0L
-    private val tapCooldown = 500L // 300ms cooldown between taps
-    private val pressVelocityThreshold = 0.05f // Adjust based on testing
+    private val tapCooldown = 200L // 300ms cooldown between taps
+    private val pressVelocityThreshold = 0.03f // Adjust based on testing
 
     // Camera state
     private val _isCameraReady = MutableStateFlow(false)
@@ -89,6 +89,27 @@ private val _calibrationPoints = MutableStateFlow(
     // Simulated homography matrix (in real implementation, this would be calculated with OpenCV)
     private var homographyMatrix: FloatArray? = null
 
+    private data class FingerVelocity(val vx: Float, val vy: Float)
+    private val fingerVelocities = mutableMapOf<Int, FingerVelocity>()
+
+    private fun predictiveSmooth(fingerId: Int, newPos: PointF, timestamp: Long): PointF {
+        val lastPos = smoothedPositions[fingerId]
+        val lastTime = lastFingerPositions[fingerId]?.timestamp
+
+        if (lastPos == null || lastTime == null) {
+            return smoothPosition(fingerId, newPos)
+        }
+
+        // Calculate velocity
+        val dt = (timestamp - lastTime) / 1_000_000_000.0f
+        if (dt > 0 && dt < 0.1f) {  // Sanity check
+            val vx = (newPos.x - lastPos.x) / dt
+            val vy = (newPos.y - lastPos.y) / dt
+            fingerVelocities[fingerId] = FingerVelocity(vx, vy)
+        }
+
+        return smoothPosition(fingerId, newPos)
+    }
     fun startCalibration() {
         _calibrationState.value = CalibrationState.InProgress
     }
@@ -130,37 +151,32 @@ private val _calibrationPoints = MutableStateFlow(
     private val lastTapTimes = mutableMapOf<Int, Long>()
 
 
-    fun updateFingerPosition(x: Float, y: Float, z: Float, timestamp: Long, handIndex: Int) {
-        Log.d("FingerTracking", "Hand $handIndex update: x=$x, y=$y, z=$z")
+    fun updateFingerPosition(x: Float, y: Float, z: Float, timestamp: Long, fingerId: Int) {
         val newPosition = FingerPosition(x, y, z, timestamp)
 
         val currentFingers = _fingerPositions.value.toMutableMap()
-        currentFingers[handIndex] = newPosition
+        currentFingers[fingerId] = newPosition
         _fingerPositions.value = currentFingers
 
-        Log.d("FingerTracking", "Total hands tracked: ${currentFingers.size}")
-
         homographyMatrix?.let { matrix ->
-            val transformed = applySimulatedHomography(x, y, matrix)
-            // Store per-hand transformed position
+            val rawTransformed = applySimulatedHomography(x, y, matrix)
+            val smoothed = predictiveSmooth(fingerId, rawTransformed, timestamp)
             val currentTransformed = _transformedFingerPositions.value.toMutableMap()
-            currentTransformed[handIndex] = transformed
+            currentTransformed[fingerId] = smoothed
             _transformedFingerPositions.value = currentTransformed
-            Log.d("FingerTracking", "Hand $handIndex transformed: (${transformed.x}, ${transformed.y})")
 
-            // Initialize tap state for new finger
-            if (!tapStates.containsKey(handIndex)) {
-                tapStates[handIndex] = TapDetectionState.Idle
-                lastTapTimes[handIndex] = 0L
+            if (!tapStates.containsKey(fingerId)) {
+                tapStates[fingerId] = TapDetectionState.Idle
+                lastTapTimes[fingerId] = 0L
             }
 
-            processTapDetection(newPosition, handIndex)
+            processTapDetection(newPosition, fingerId)
         }
 
-        lastFingerPositions[handIndex] = newPosition
+        lastFingerPositions[fingerId] = newPosition
     }
 
-private fun processTapDetection(currentPosition: FingerPosition, handIndex: Int) {
+    private fun processTapDetection(currentPosition: FingerPosition, handIndex: Int) {
     Log.d("TapDetection", "Hand $handIndex - Processing tap detection")
 
     val lastPos = lastFingerPositions[handIndex] ?: run {
@@ -264,19 +280,47 @@ private fun processTapDetection(currentPosition: FingerPosition, handIndex: Int)
     }
 
     private fun applySimulatedHomography(x: Float, y: Float, matrix: FloatArray): PointF {
-        // Matrix format: [minX, minY, width, height]
         val minX = matrix[0]
         val minY = matrix[1]
         val width = matrix[2]
         val height = matrix[3]
 
-        // Map camera coordinates to normalized 0-1 range within calibration area
-        val normalizedX = ((x - minX) / width).coerceIn(0f, 1f)
-        val normalizedY = ((y - minY) / height).coerceIn(0f, 1f)
+        // Add 15% margin buffer around calibration area
+        val marginX = width * 0.15f
+        val marginY = height * 0.15f
 
-        Log.d("VirtualKeyboard", "ViewModel: Homography transform - input($x,$y) -> normalized($normalizedX,$normalizedY)")
+        val expandedMinX = minX - marginX
+        val expandedMinY = minY - marginY
+        val expandedWidth = width + (2 * marginX)
+        val expandedHeight = height + (2 * marginY)
+
+        // Map with expanded area but still normalize to 0-1
+        val normalizedX = ((x - expandedMinX) / expandedWidth).coerceIn(0f, 1f)
+        val normalizedY = ((y - expandedMinY) / expandedHeight).coerceIn(0f, 1f)
+
+        Log.v("Homography", "Input($x,$y) -> Norm($normalizedX,$normalizedY)")
 
         return PointF(normalizedX, normalizedY)
+    }
+
+    // Exponential Moving Average filter
+    private val smoothingFactor = 0.3f  // Lower = more smoothing, higher = more responsive
+    private val smoothedPositions = mutableMapOf<Int, PointF>()
+
+    private fun smoothPosition(fingerId: Int, newPos: PointF): PointF {
+        val prevPos = smoothedPositions[fingerId]
+
+        return if (prevPos == null) {
+            smoothedPositions[fingerId] = newPos
+            newPos
+        } else {
+            val smoothed = PointF(
+                prevPos.x + smoothingFactor * (newPos.x - prevPos.x),
+                prevPos.y + smoothingFactor * (newPos.y - prevPos.y)
+            )
+            smoothedPositions[fingerId] = smoothed
+            smoothed
+        }
     }
 
     private fun createQwertyLayout(): List<List<KeyboardKey>> {

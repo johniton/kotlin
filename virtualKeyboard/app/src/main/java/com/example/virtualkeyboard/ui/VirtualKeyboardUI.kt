@@ -526,31 +526,36 @@ private fun DrawScope.drawKeyboard(
         }
     }
 
-    fingerPositions.forEach { (handIndex, pos) ->
+    val fingerColors = listOf(
+        Color(0xFFFF6B6B), // Thumb
+        Color(0xFF4ECDC4), // Index
+        Color(0xFF45B7D1), // Middle
+        Color(0xFFFFA07A), // Ring
+        Color(0xFF98D8C8)  // Pinky
+    )
+
+    fingerPositions.forEach { (fingerId, pos) ->
+        val handIndex = fingerId / 10
+        val fingerIndex = fingerId % 10
+
         val x = pos.x * canvasWidth
         val y = pos.y * canvasHeight
 
         val isInBounds = pos.x in 0f..1f && pos.y in 0f..1f
-        val color = if (handIndex == 0) Color.Red else Color.Blue  // Different colors per hand
+        val baseColor = fingerColors.getOrElse(fingerIndex) { Color.Gray }
+        val color = if (isInBounds) baseColor else Color.Yellow
 
-        Log.d("KeyboardDraw", "Hand $handIndex at canvas: ($x, $y), inBounds=$isInBounds")
-
+        // Draw finger circle
         drawCircle(
-            color = if (isInBounds) color else Color.Yellow,
-            radius = 25f,
+            color = color.copy(alpha = 0.7f),
+            radius = 20f,
             center = Offset(x, y)
         )
 
+        // Inner circle
         drawCircle(
-            color = Color.White,
-            radius = 18f,
-            center = Offset(x, y)
-        )
-
-        // Draw hand index number
-        drawCircle(
-            color = Color.Black,
-            radius = 10f,
+            color = Color.White.copy(alpha = 0.9f),
+            radius = 12f,
             center = Offset(x, y)
         )
     }

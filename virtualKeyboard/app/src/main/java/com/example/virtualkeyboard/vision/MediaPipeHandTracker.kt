@@ -92,13 +92,23 @@ class MediaPipeHandTracker(
 
                                 val imageWidth = input.width
                                 val imageHeight = input.height
+                                // Track all 5 fingertips: thumb(4), index(8), middle(12), ring(16), pinky(20)
+                                val fingerTips = listOf(4, 8, 12, 16, 20)
+                                fingerTips.forEachIndexed { fingerIndex, landmarkIndex ->
+                                    if (landmarks.size > landmarkIndex) {
+                                        val tip = landmarks[landmarkIndex]
+                                        val pixelX = tip.x() * imageWidth
+                                        val pixelY = tip.y() * imageHeight
+                                        val depthZ = tip.z()
 
-                                val pixelX = indexFingerTip.x() * imageWidth
-                                val pixelY = indexFingerTip.y() * imageHeight
-                                val depthZ = indexFingerTip.z()
+                                        // Create unique ID: handIndex * 10 + fingerIndex
+                                        val fingerId = handIndex * 10 + fingerIndex
 
-                                Log.v(TAG, "MediaPipe: Hand $handIndex - x=$pixelX, y=$pixelY, z=$depthZ")
-                                onHandLandmarks(pixelX, pixelY, depthZ, System.nanoTime(), handIndex)
+                                        onHandLandmarks(pixelX, pixelY, depthZ, System.nanoTime(), fingerId)
+                                    }
+                                }
+
+
                             }
                         }
                     }
@@ -133,21 +143,27 @@ class HandAnalyzer(
     private val handTracker: MediaPipeHandTracker
 ) : ImageAnalysis.Analyzer {
 
-    private var frameCount = 0
+    private var lastProcessedTime = 0L
+    private val minFrameInterval = 33_000_000L  // Process every 33ms (30 FPS max)
 
     override fun analyze(imageProxy: ImageProxy) {
         try {
-            frameCount++
-            if (frameCount % 30 == 0) {
-                Log.v(TAG, "HandAnalyzer: Processing frame $frameCount")
+            val currentTime = System.nanoTime()
+
+            // Skip frame if too soon
+            if (currentTime - lastProcessedTime < minFrameInterval) {
+                imageProxy.close()
+                return
             }
+
+            lastProcessedTime = currentTime
 
             val bitmap = imageProxy.toBitmap()
             val mpImage = BitmapImageBuilder(bitmap).build()
             handTracker.detectAsync(mpImage, imageProxy.imageInfo.timestamp)
             imageProxy.close()
         } catch (e: Exception) {
-            Log.e(TAG, "HandAnalyzer: Error in analyze", e)
+            Log.e(TAG, "HandAnalyzer error", e)
             imageProxy.close()
         }
     }
