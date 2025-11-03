@@ -3,7 +3,9 @@ package com.example.tempforeruda
 
 import android.webkit.WebView
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -62,32 +64,17 @@ fun DevBrowserScreen() {
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        // Top App Bar
-        TopAppBar(
-            title = {
-                Text(
-                    "DevBrowser",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 20.sp
-                )
-            },
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-            )
-        )
-
-        // URL Bar
+              // URL Bar
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(8.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                .padding(horizontal = 8.dp, vertical = 4.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(8.dp),
+                    .padding(4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // Back Button
@@ -155,9 +142,10 @@ fun DevBrowserScreen() {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())  // ← Add this
                 .background(MaterialTheme.colorScheme.surfaceVariant)
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.SpaceBetween
+                .padding(horizontal = 16.dp, vertical = 6.dp),  // ← Reduce vertical padding from 8 to 6
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             // Framework Badge
             Surface(
