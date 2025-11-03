@@ -1,39 +1,30 @@
 package com.example.tempforeruda
 
-
 import android.webkit.WebView
-import androidx.compose.foundation.background
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DevBrowserScreen() {
-    var url by remember { mutableStateOf("https://react.dev") }
-    var urlInput by remember { mutableStateOf(url) }
+    var url by rememberSaveable { mutableStateOf("https://google.com") }
+    var urlInput by rememberSaveable { mutableStateOf(url) }
     var webView by remember { mutableStateOf<WebView?>(null) }
     var canGoBack by remember { mutableStateOf(false) }
     var canGoForward by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
     var loadProgress by remember { mutableStateOf(0) }
-    var showDevTools by remember { mutableStateOf(false) }
-    var detectedFramework by remember { mutableStateOf("None") }
-    var networkRequestCount by remember { mutableStateOf(0) }
-    var consoleLogCount by remember { mutableStateOf(0) }
+    var showDevTools by rememberSaveable { mutableStateOf(false) }
 
     val context = LocalContext.current
 
@@ -45,14 +36,19 @@ fun DevBrowserScreen() {
         url = finalUrl
         urlInput = finalUrl
         webView?.loadUrl(finalUrl)
-        networkRequestCount = 0
-        consoleLogCount = 0
-        detectedFramework = "Detecting..."
     }
 
+
     val updateNavigation: () -> Unit = {
-        canGoBack = webView?.canGoBack() ?: false
-        canGoForward = webView?.canGoForward() ?: false
+        webView?.let { wv ->
+            canGoBack = wv.canGoBack()
+            canGoForward = wv.canGoForward()
+            // Update URL bar to match current page
+            wv.url?.let { currentUrl ->
+                url = currentUrl
+                urlInput = currentUrl
+            }
+        }
     }
 
     val toggleDevTools: () -> Unit = {
@@ -64,7 +60,7 @@ fun DevBrowserScreen() {
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-              // URL Bar
+        // URL Bar
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -138,88 +134,7 @@ fun DevBrowserScreen() {
             )
         }
 
-        // Stats Bar
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState())  // ← Add this
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-                .padding(horizontal = 16.dp, vertical = 6.dp),  // ← Reduce vertical padding from 8 to 6
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            // Framework Badge
-            Surface(
-                shape = RoundedCornerShape(12.dp),
-                color = MaterialTheme.colorScheme.secondaryContainer
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        Icons.Default.Build,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.onSecondaryContainer
-                    )
-                    Spacer(Modifier.width(4.dp))
-                    Text(
-                        detectedFramework,
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer
-                    )
-                }
-            }
-
-            // Network Count
-            Surface(
-                shape = RoundedCornerShape(12.dp),
-                color = MaterialTheme.colorScheme.tertiaryContainer
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        Icons.Default.Check,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.onTertiaryContainer
-                    )
-                    Spacer(Modifier.width(4.dp))
-                    Text(
-                        "$networkRequestCount requests",
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onTertiaryContainer
-                    )
-                }
-            }
-
-            // Console Count
-            Surface(
-                shape = RoundedCornerShape(12.dp),
-                color = MaterialTheme.colorScheme.primaryContainer
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        Icons.Default.Create,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                    Spacer(Modifier.width(4.dp))
-                    Text(
-                        "$consoleLogCount logs",
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                }
-            }
-        }
-
+        // WebView
         // WebView
         AndroidView(
             modifier = Modifier
@@ -236,18 +151,28 @@ fun DevBrowserScreen() {
                         loadProgress = progress
                         isLoading = progress < 100
                     },
-                    onFrameworkDetected = { framework, version ->
-                        detectedFramework = "$framework $version"
-                    },
-                    onNetworkRequest = {
-                        networkRequestCount++
-                    },
-                    onConsoleLog = {
-                        consoleLogCount++
+                    onFrameworkDetected = { _, _ -> },
+                    onNetworkRequest = { },
+                    onConsoleLog = { },
+                    onUrlChanged = { newUrl ->  // ADD THIS
+                        url = newUrl
+                        urlInput = newUrl
+                        updateNavigation()
                     }
                 ).also {
                     webView = it
-                    it.loadUrl(url)
+                    // Restore state if coming back from rotation
+                    if (url != "https://google.com") {
+                        it.loadUrl(url)
+                    } else {
+                        it.loadUrl(url)
+                    }
+                }
+            },
+            update = { view ->
+                // Preserve WebView state on recomposition
+                if (view != webView) {
+                    webView = view
                 }
             }
         )

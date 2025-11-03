@@ -16,7 +16,8 @@ object DevWebViewManager {
         onProgressChanged: (Int) -> Unit,
         onFrameworkDetected: (String, String) -> Unit,
         onNetworkRequest: () -> Unit,
-        onConsoleLog: () -> Unit
+        onConsoleLog: () -> Unit,
+        onUrlChanged: (String) -> Unit
     ): WebView {
         return WebView(context).apply {
             settings.apply {
@@ -50,35 +51,25 @@ object DevWebViewManager {
                 "DevBridge"
             )
 
-//            webViewClient = object : WebViewClient() {
-//                override fun onPageFinished(view: WebView?, url: String?) {
-//                    super.onPageFinished(view, url)
-//
-//                    // Inject all dev tools AFTER page loads
-//                    view?.evaluateJavascript(DevToolsInjector.COMPLETE_INJECTION) { result ->
-//                        Log.d("DevBrowser", "Injection result: $result")
-//                    }
-//
-//                    onPageFinished()
-//                }
-//            }
-
             webViewClient = object : WebViewClient() {
                 override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
                     super.onPageStarted(view, url, favicon)
-
-                    // Inject console capture IMMEDIATELY when page starts
+                    url?.let { onUrlChanged(it) }
                     view?.evaluateJavascript(DevToolsInjector.EARLY_INJECTION, null)
                 }
 
                 override fun onPageFinished(view: WebView?, url: String?) {
                     super.onPageFinished(view, url)
-
-                    // Inject Eruda + other tools AFTER page loads
+                    url?.let { onUrlChanged(it) }
                     view?.evaluateJavascript(DevToolsInjector.LATE_INJECTION, null)
-
                     onPageFinished()
                 }
+
+                override fun doUpdateVisitedHistory(view: WebView?, url: String?, isReload: Boolean) {
+                    super.doUpdateVisitedHistory(view, url, isReload)
+                    url?.let { onUrlChanged(it) }
+                }
+
             }
 
             webChromeClient = object : WebChromeClient() {
